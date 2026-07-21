@@ -12,19 +12,6 @@ const FieldSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: [
-      "text",
-      "number",
-      "email",
-      "tel",
-      "date",
-      "textarea",
-      "select",
-      "checkbox",
-      "radio",
-      "image",
-      "video",
-    ],
   },
   required: {
     type: Boolean,
