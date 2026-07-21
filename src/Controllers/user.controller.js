@@ -188,6 +188,7 @@ const createAdmin = async (req, res, next) => {
       businessName,
       timezone: timezone || "UTC",
       phoneNumber,
+      secretKey: "sec_" + require("crypto").randomBytes(16).toString("hex"),
       createdBy: req.user._id,
     });
 
@@ -267,9 +268,23 @@ const getAdmins = async (req, res, next) => {
     const admins = await User.find({ role: "Admin", isDeleted: false }).select(
       "-password",
     );
+
+    let modified = false;
+    for (const admin of admins) {
+      if (!admin.secretKey) {
+        admin.secretKey = "sec_" + require("crypto").randomBytes(16).toString("hex");
+        await admin.save();
+        modified = true;
+      }
+    }
+
+    const finalAdmins = modified
+      ? await User.find({ role: "Admin", isDeleted: false }).select("-password")
+      : admins;
+
     res
       .status(200)
-      .json(new ApiResponse(200, admins, "Admins retrieved successfully."));
+      .json(new ApiResponse(200, finalAdmins, "Admins retrieved successfully."));
   } catch (error) {
     next(error);
   }

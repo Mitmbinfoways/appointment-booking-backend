@@ -45,6 +45,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "UTC"
   },
+  secretKey: {
+    type: String,
+    trim: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
