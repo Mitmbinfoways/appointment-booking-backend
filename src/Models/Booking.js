@@ -6,6 +6,10 @@ const BookingSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  bookingId: {
+    type: String,
+    required: false
+  },
   slotDate: {
     type: String, // Format: "YYYY-MM-DD"
     required: true

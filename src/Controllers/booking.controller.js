@@ -154,7 +154,7 @@ const getAvailableSlots = async (req, res, next) => {
       operationalStartTime,
       operationalEndTime,
       settings.slotDurationMinutes,
-      settings.breakTimes
+      dayConfig.breakTimes || []
     );
 
     // Fetch existing bookings for this date and admin
@@ -329,9 +329,15 @@ const createBooking = async (req, res, next) => {
       return next(new ApiError(400, 'Selected slot is fully booked.'));
     }
 
+    // Generate numeric-only bookingId with date (YYYYMMDD + 4 random digits)
+    const dateDigits = slotDate.replace(/-/g, "");
+    const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+    const numericBookingId = `${dateDigits}${randomDigits}`;
+
     // Create the booking
     const booking = new Booking({
       adminId,
+      bookingId: numericBookingId,
       slotDate,
       slotStartTime,
       slotEndTime,
