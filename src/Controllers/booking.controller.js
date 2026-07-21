@@ -55,10 +55,51 @@ const validateField = (field, value) => {
   return null;
 };
 
+const checkSecretKeyOrSuperAdmin = async (req, adminId) => {
+  // 1. Check if caller is authenticated SuperAdmin or Admin themselves
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = require('jsonwebtoken').verify(
+        token,
+        process.env.JWT_SECRET
+      );
+      const user = await User.findOne({ _id: decoded.id, isDeleted: false });
+      if (user && user.isActive) {
+        if (user.role === 'SuperAdmin' || user._id.toString() === adminId.toString()) {
+          return true;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // 2. Validate admin existence and status
+  const admin = await User.findOne({ _id: adminId, role: 'Admin', isDeleted: false });
+  if (!admin || !admin.isActive) {
+    return false;
+  }
+
+  // 3. Match secret key header
+  const clientKey = req.headers['secretkey'] || req.headers['secretkey'] || req.headers['x-secret-key'] || req.headers['secret-key'] || req.headers['secret_key'];
+  if (!clientKey) {
+    return false;
+  }
+  return clientKey === admin.secretKey;
+};
+
 // Retrieve public form config
 const getPublicFormConfig = async (req, res, next) => {
   try {
     const { adminId } = req.params;
+
+    const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
+    if (!authorized) {
+      return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
+    }
+
     const formConfig = await FormConfig.findOne({ adminId });
     if (!formConfig) {
       return next(new ApiError(404, 'Form configuration not found for this Admin.'));
@@ -84,8 +125,13 @@ const getAvailableSlots = async (req, res, next) => {
       return res.status(200).json(new ApiResponse(200, [], 'Cannot book appointments for past dates.'));
     }
 
+    const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
+    if (!authorized) {
+      return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
+    }
+
     // Verify Admin exists and is active
-    const admin = await User.findOne({ _id: adminId, role: 'Admin' });
+    const admin = await User.findOne({ _id: adminId, role: 'Admin', isDeleted: false });
     if (!admin || !admin.isActive) {
       return next(new ApiError(404, 'Admin not found or inactive.'));
     }
@@ -210,8 +256,13 @@ const createBooking = async (req, res, next) => {
       return next(new ApiError(400, 'Cannot book appointments for past dates.'));
     }
 
+    const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
+    if (!authorized) {
+      return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
+    }
+
     // Verify Admin
-    const admin = await User.findOne({ _id: adminId, role: 'Admin' });
+    const admin = await User.findOne({ _id: adminId, role: 'Admin', isDeleted: false });
     if (!admin || !admin.isActive) {
       return next(new ApiError(404, 'Admin not found or inactive.'));
     }
@@ -352,8 +403,40 @@ const createBooking = async (req, res, next) => {
   }
 };
 
+// Retrieve public holidays
+const getPublicHolidays = async (req, res, next) => {
+  try {
+    const { adminId } = req.params;
+    const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
+    if (!authorized) {
+      return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
+    }
+    const holidays = await Holiday.find({ adminId }).sort({ date: 1 });
+    res.status(200).json(new ApiResponse(200, holidays, 'Public holidays retrieved successfully.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Retrieve public slot settings
+const getPublicSlotSettings = async (req, res, next) => {
+  try {
+    const { adminId } = req.params;
+    const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
+    if (!authorized) {
+      return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
+    }
+    const settings = await SlotSettings.findOne({ adminId });
+    res.status(200).json(new ApiResponse(200, settings, 'Public slot settings retrieved successfully.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPublicFormConfig,
   getAvailableSlots,
-  createBooking
+  createBooking,
+  getPublicHolidays,
+  getPublicSlotSettings
 };

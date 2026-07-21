@@ -21,9 +21,9 @@ const holidayRoutes = require("./Routes/holiday.routes");
 const bookingRoutes = require("./Routes/booking.routes");
 
 // Register Routes
-app.use("/api", userRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Dynamic Appointment Booking API is Running!");
