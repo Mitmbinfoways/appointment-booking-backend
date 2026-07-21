@@ -1,40 +1,57 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const FieldSchema = new mongoose.Schema({
   fieldKey: {
     type: String,
-    required: true // e.g., "first_name", "phone_number"
+    required: true,
   },
   label: {
     type: String,
-    required: true // e.g., "First Name", "Phone Number"
+    required: true,
   },
   type: {
     type: String,
     required: true,
-    enum: ['text', 'number', 'email', 'tel', 'textarea', 'select', 'checkbox', 'radio', 'image', 'video']
+    enum: [
+      "text",
+      "number",
+      "email",
+      "tel",
+      "date",
+      "textarea",
+      "select",
+      "checkbox",
+      "radio",
+      "image",
+      "video",
+    ],
   },
   required: {
     type: Boolean,
-    default: false
+    default: false,
   },
-  options: [{
-    type: String // Only populated if field type is 'select', 'checkbox', or 'radio'
-  }],
+  options: [
+    {
+      type: String,
+    },
+  ],
   order: {
     type: Number,
-    required: true // Handles drag-and-drop visual hierarchy order
-  }
+    required: true,
+  },
 });
 
-const FormConfigSchema = new mongoose.Schema({
-  adminId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true
+const FormConfigSchema = new mongoose.Schema(
+  {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
+    fields: [FieldSchema],
   },
-  fields: [FieldSchema]
-}, { timestamps: true });
+  { timestamps: true },
+);
 
-module.exports = mongoose.model('FormConfig', FormConfigSchema);
+module.exports = mongoose.model("FormConfig", FormConfigSchema);
