@@ -79,6 +79,11 @@ const getAvailableSlots = async (req, res, next) => {
       return next(new ApiError(400, 'Date parameter is required.'));
     }
 
+    const todayISO = new Date().toISOString().split('T')[0];
+    if (date < todayISO) {
+      return res.status(200).json(new ApiResponse(200, [], 'Cannot book appointments for past dates.'));
+    }
+
     // Verify Admin exists and is active
     const admin = await User.findOne({ _id: adminId, role: 'Admin' });
     if (!admin || !admin.isActive) {
@@ -168,6 +173,9 @@ const getAvailableSlots = async (req, res, next) => {
 
     // Map availability status and capacity details
     const calculatedSlots = slots.map(slot => {
+      if (slot.status === 'break') {
+        return slot;
+      }
       const key = `${slot.startTime}-${slot.endTime}`;
       const count = bookingCounts[key] || 0;
       const capacity = settings.capacityPerSlot;
@@ -195,6 +203,11 @@ const createBooking = async (req, res, next) => {
 
     if (!slotDate || !slotStartTime || !slotEndTime || !dynamicResponses) {
       return next(new ApiError(400, 'slotDate, slotStartTime, slotEndTime, and dynamicResponses are required.'));
+    }
+
+    const todayISO = new Date().toISOString().split('T')[0];
+    if (slotDate < todayISO) {
+      return next(new ApiError(400, 'Cannot book appointments for past dates.'));
     }
 
     // Verify Admin
@@ -292,7 +305,8 @@ const createBooking = async (req, res, next) => {
     }
 
     // Verify it doesn't overlap with any breaks
-    const overlapsBreak = settings.breakTimes.some(b => {
+    const activeBreaks = dayConfig.breakTimes || [];
+    const overlapsBreak = activeBreaks.some(b => {
       const breakStart = timeToMinutes(b.startTime);
       const breakEnd = timeToMinutes(b.endTime);
       return reqStart < breakEnd && reqEnd > breakStart;

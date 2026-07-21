@@ -38,14 +38,12 @@ function generateSlots(startTime, endTime, durationMinutes, breakTimes = []) {
       return slotStart < b.end && slotEnd > b.start;
     });
 
-    if (!overlapsBreak) {
-      slots.push({
-        startTime: minutesToTime(slotStart),
-        endTime: minutesToTime(slotEnd),
-        status: "available",
-        bookingsCount: 0
-      });
-    }
+    slots.push({
+      startTime: minutesToTime(slotStart),
+      endTime: minutesToTime(slotEnd),
+      status: overlapsBreak ? "break" : "available",
+      bookingsCount: 0
+    });
 
     current += durationMinutes;
   }

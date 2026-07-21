@@ -10,6 +10,11 @@ const createHoliday = async (req, res, next) => {
       return next(new ApiError(400, 'Date is required.'));
     }
 
+    const todayISO = new Date().toISOString().split('T')[0];
+    if (date < todayISO) {
+      return next(new ApiError(400, 'Cannot set holidays for past dates.'));
+    }
+
     // Check if holiday already exists for this date and admin
     const existing = await Holiday.findOne({ adminId: req.user._id, date });
     if (existing) {
@@ -157,6 +162,11 @@ const createAdminHolidaySuper = async (req, res, next) => {
     const { date, holidayType, halfDayType, customStartTime, customEndTime, reason } = req.body;
     if (!date) {
       return next(new ApiError(400, 'Date is required.'));
+    }
+
+    const todayISO = new Date().toISOString().split('T')[0];
+    if (date < todayISO) {
+      return next(new ApiError(400, 'Cannot set holidays for past dates.'));
     }
 
     const existing = await Holiday.findOne({ adminId, date });
