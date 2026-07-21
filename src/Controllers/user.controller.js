@@ -3,6 +3,7 @@ const SlotSettings = require("../Models/SlotSettings");
 const FormConfig = require("../Models/FormConfig");
 const Booking = require("../Models/Booking");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const ApiError = require("../Utils/ApiError");
 const ApiResponse = require("../Utils/ApiResponse");
 
@@ -510,8 +511,15 @@ const updateSlotSettings = async (req, res, next) => {
 // Get Bookings
 const getBookings = async (req, res, next) => {
   try {
-    const { status, date, page = 1, limit = 10 } = req.query;
-    const filter = { adminId: req.user._id };
+    const { status, date, page = 1, limit = 1000 } = req.query;
+    const adminId = req.user._id;
+
+    const idList = [adminId];
+    if (mongoose.Types.ObjectId.isValid(adminId)) {
+      idList.push(new mongoose.Types.ObjectId(adminId));
+    }
+
+    const filter = { adminId: { $in: idList } };
 
     if (status) filter.status = status;
     if (date) filter.slotDate = date;
@@ -549,8 +557,14 @@ const getBookings = async (req, res, next) => {
 const getAdminBookingsSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { status, date, page = 1, limit = 10 } = req.query;
-    const filter = { adminId };
+    const { status, date, page = 1, limit = 1000 } = req.query;
+
+    const idList = [adminId];
+    if (mongoose.Types.ObjectId.isValid(adminId)) {
+      idList.push(new mongoose.Types.ObjectId(adminId));
+    }
+
+    const filter = { adminId: { $in: idList } };
 
     if (status) filter.status = status;
     if (date) filter.slotDate = date;
