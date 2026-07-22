@@ -10,6 +10,7 @@ const {
   getAdmins,
   updateAdmin,
   toggleAdminStatus,
+  toggleAdminApiCredentials,
   deleteAdmin,
   getFormConfig,
   updateFormConfig,
@@ -49,6 +50,7 @@ router.post('/superadmin/admins', restrictTo('SuperAdmin'), createAdmin);
 router.get('/superadmin/admins', restrictTo('SuperAdmin'), getAdmins);
 router.put('/superadmin/admins/:id', restrictTo('SuperAdmin'), updateAdmin);
 router.put('/superadmin/admins/:id/toggle', restrictTo('SuperAdmin'), toggleAdminStatus);
+router.put('/superadmin/admins/:id/toggle-credentials', restrictTo('SuperAdmin'), toggleAdminApiCredentials);
 router.delete('/superadmin/admins/:id', restrictTo('SuperAdmin'), deleteAdmin);
 
 router.get('/superadmin/form-config/:adminId', restrictTo('SuperAdmin'), getAdminFormConfigSuper);

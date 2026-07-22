@@ -49,6 +49,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  showApiCredentials: {
+    type: Boolean,
+    default: false
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

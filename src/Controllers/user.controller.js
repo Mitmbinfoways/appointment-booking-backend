@@ -357,6 +357,36 @@ const toggleAdminStatus = async (req, res, next) => {
   }
 };
 
+// Toggle Admin API Credentials Visibility (SuperAdmin)
+const toggleAdminApiCredentials = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const admin = await User.findOne({
+      _id: id,
+      role: "Admin",
+      isDeleted: false,
+    });
+    if (!admin) {
+      return next(new ApiError(404, "Admin not found."));
+    }
+
+    admin.showApiCredentials = !admin.showApiCredentials;
+    await admin.save();
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { showApiCredentials: admin.showApiCredentials },
+          `API Credentials visibility turned ${admin.showApiCredentials ? "ON" : "OFF"}.`,
+        ),
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Soft Delete Admin
 const deleteAdmin = async (req, res, next) => {
   try {
@@ -865,6 +895,7 @@ module.exports = {
   getAdmins,
   updateAdmin,
   toggleAdminStatus,
+  toggleAdminApiCredentials,
   deleteAdmin,
   getFormConfig,
   updateFormConfig,
