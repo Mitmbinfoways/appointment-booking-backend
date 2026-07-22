@@ -517,10 +517,18 @@ const updateSlotSettings = async (req, res, next) => {
       settings = new SlotSettings({ adminId: req.user._id });
     }
 
-    if (typeof slotDurationMinutes === "number")
+    if (typeof slotDurationMinutes === "number") {
+      if (slotDurationMinutes < 5) {
+        return next(new ApiError(400, "Slot duration must be at least 5 minutes."));
+      }
       settings.slotDurationMinutes = slotDurationMinutes;
-    if (typeof capacityPerSlot === "number")
+    }
+    if (typeof capacityPerSlot === "number") {
+      if (capacityPerSlot < 1) {
+        return next(new ApiError(400, "Capacity per slot must be at least 1."));
+      }
       settings.capacityPerSlot = capacityPerSlot;
+    }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;
       settings.markModified('workingDays');
@@ -861,10 +869,18 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
       settings = new SlotSettings({ adminId });
     }
 
-    if (typeof slotDurationMinutes === "number")
+    if (typeof slotDurationMinutes === "number") {
+      if (slotDurationMinutes < 5) {
+        return next(new ApiError(400, "Slot duration must be at least 5 minutes."));
+      }
       settings.slotDurationMinutes = slotDurationMinutes;
-    if (typeof capacityPerSlot === "number")
+    }
+    if (typeof capacityPerSlot === "number") {
+      if (capacityPerSlot < 1) {
+        return next(new ApiError(400, "Capacity per slot must be at least 1."));
+      }
       settings.capacityPerSlot = capacityPerSlot;
+    }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;
       settings.markModified('workingDays');

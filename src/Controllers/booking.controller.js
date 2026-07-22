@@ -6,6 +6,7 @@ const Booking = require('../Models/Booking');
 const ApiError = require('../Utils/ApiError');
 const ApiResponse = require('../Utils/ApiResponse');
 const { generateSlots, timeToMinutes, minutesToTime } = require('../Utils/slotGenerator');
+const { convertTimeBetweenTimezones, getTimezoneLabel } = require('../Utils/timezoneHelper');
 
 // Validate field type
 const validateField = (field, value) => {
@@ -82,8 +83,14 @@ const checkSecretKeyOrSuperAdmin = async (req, adminId) => {
     return false;
   }
 
-  // 3. Match secret key header
-  const clientKey = req.headers['secretkey'] || req.headers['secretkey'] || req.headers['x-secret-key'] || req.headers['secret-key'] || req.headers['secret_key'];
+  // 3. Match secret key header or query parameters
+  const clientKey = req.headers['secretkey'] ||
+                    req.headers['x-secret-key'] ||
+                    req.headers['secret-key'] ||
+                    req.headers['secret_key'] ||
+                    req.query?.key ||
+                    req.query?.secretKey ||
+                    req.query?.secretkey;
   if (!clientKey) {
     return false;
   }
@@ -120,11 +127,6 @@ const getAvailableSlots = async (req, res, next) => {
       return next(new ApiError(400, 'Date parameter is required.'));
     }
 
-    const todayISO = new Date().toISOString().split('T')[0];
-    if (date < todayISO) {
-      return res.status(200).json(new ApiResponse(200, [], 'Cannot book appointments for past dates.'));
-    }
-
     const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
     if (!authorized) {
       return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
@@ -134,6 +136,11 @@ const getAvailableSlots = async (req, res, next) => {
     const admin = await User.findOne({ _id: adminId, role: 'Admin', isDeleted: false });
     if (!admin || !admin.isActive) {
       return next(new ApiError(404, 'Admin not found or inactive.'));
+    }
+
+    const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: admin.timezone || 'UTC' });
+    if (date < todayISO) {
+      return res.status(200).json(new ApiResponse(200, [], 'Cannot book appointments for past dates.'));
     }
 
     // Get settings
@@ -217,25 +224,54 @@ const getAvailableSlots = async (req, res, next) => {
       bookingCounts[key] = (bookingCounts[key] || 0) + 1;
     });
 
-    // Map availability status and capacity details
+    const userTimeZone = req.headers['user_time_zone'] ||
+                         req.headers['user-time-zone'] ||
+                         req.query?.user_time_zone ||
+                         req.query?.timezone ||
+                         admin.timezone || 'UTC';
+    const adminTimeZone = admin.timezone || 'UTC';
+
+    // Map availability status, capacity details, and convert slot times to visitor timezone
     const calculatedSlots = slots.map(slot => {
       if (slot.status === 'break') {
-        return slot;
+        const startConv = convertTimeBetweenTimezones(slot.startTime, date, adminTimeZone, userTimeZone);
+        const endConv = convertTimeBetweenTimezones(slot.endTime, date, adminTimeZone, userTimeZone);
+        return {
+          ...slot,
+          startTime: startConv.time,
+          endTime: endConv.time,
+          adminStartTime: slot.startTime,
+          adminEndTime: slot.endTime,
+        };
       }
+
       const key = `${slot.startTime}-${slot.endTime}`;
       const count = bookingCounts[key] || 0;
       const capacity = settings.capacityPerSlot;
       
+      const startConv = convertTimeBetweenTimezones(slot.startTime, date, adminTimeZone, userTimeZone);
+      const endConv = convertTimeBetweenTimezones(slot.endTime, date, adminTimeZone, userTimeZone);
+
       return {
-        startTime: slot.startTime,
-        endTime: slot.endTime,
+        startTime: startConv.time,
+        endTime: endConv.time,
+        adminStartTime: slot.startTime,
+        adminEndTime: slot.endTime,
         bookingsCount: count,
         capacityLimit: capacity,
         status: count >= capacity ? 'booked' : 'available'
       };
     });
 
-    res.status(200).json(new ApiResponse(200, calculatedSlots, 'Slots retrieved successfully.'));
+    const responsePayload = {
+      slots: calculatedSlots,
+      userTimeZone,
+      userTimezoneLabel: getTimezoneLabel(userTimeZone),
+      adminTimeZone,
+      adminTimezoneLabel: getTimezoneLabel(adminTimeZone)
+    };
+
+    res.status(200).json(new ApiResponse(200, responsePayload, 'Slots retrieved successfully.'));
   } catch (error) {
     next(error);
   }
@@ -251,11 +287,6 @@ const createBooking = async (req, res, next) => {
       return next(new ApiError(400, 'slotDate, slotStartTime, slotEndTime, and dynamicResponses are required.'));
     }
 
-    const todayISO = new Date().toISOString().split('T')[0];
-    if (slotDate < todayISO) {
-      return next(new ApiError(400, 'Cannot book appointments for past dates.'));
-    }
-
     const authorized = await checkSecretKeyOrSuperAdmin(req, adminId);
     if (!authorized) {
       return next(new ApiError(401, 'Unauthorized access: Invalid or missing Secret Key.'));
@@ -265,6 +296,11 @@ const createBooking = async (req, res, next) => {
     const admin = await User.findOne({ _id: adminId, role: 'Admin', isDeleted: false });
     if (!admin || !admin.isActive) {
       return next(new ApiError(404, 'Admin not found or inactive.'));
+    }
+
+    const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: admin.timezone || 'UTC' });
+    if (slotDate < todayISO) {
+      return next(new ApiError(400, 'Cannot book appointments for past dates.'));
     }
 
     // Retrieve and Validate dynamic responses

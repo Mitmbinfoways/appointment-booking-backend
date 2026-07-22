@@ -18,6 +18,7 @@ const minutesToTime = (mins) => {
  * @returns {Array<{startTime: string, endTime: string, status: string, bookingsCount: number}>}
  */
 function generateSlots(startTime, endTime, durationMinutes, breakTimes = []) {
+  if (!durationMinutes || durationMinutes <= 0) return [];
   const slots = [];
   const startMins = timeToMinutes(startTime);
   const endMins = timeToMinutes(endTime);

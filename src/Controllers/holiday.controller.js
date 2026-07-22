@@ -1,6 +1,7 @@
 const Holiday = require('../Models/Holiday');
 const ApiError = require('../Utils/ApiError');
 const ApiResponse = require('../Utils/ApiResponse');
+const { timeToMinutes } = require('../Utils/slotGenerator');
 
 // Create Holiday / Off-Day
 const createHoliday = async (req, res, next) => {
@@ -10,7 +11,8 @@ const createHoliday = async (req, res, next) => {
       return next(new ApiError(400, 'Date is required.'));
     }
 
-    const todayISO = new Date().toISOString().split('T')[0];
+    const adminTimezone = req.user?.timezone || 'UTC';
+    const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: adminTimezone });
     if (date < todayISO) {
       return next(new ApiError(400, 'Cannot set holidays for past dates.'));
     }
@@ -36,6 +38,12 @@ const createHoliday = async (req, res, next) => {
         finalEndTime = '13:00';
       }
     } else if (type === 'custom') {
+      if (!customStartTime || !customEndTime) {
+        return next(new ApiError(400, 'customStartTime and customEndTime are required for custom holiday.'));
+      }
+      if (timeToMinutes(customStartTime) >= timeToMinutes(customEndTime)) {
+        return next(new ApiError(400, 'Custom start time must be earlier than end time.'));
+      }
       isFullDay = false;
       finalStartTime = customStartTime;
       finalEndTime = customEndTime;
