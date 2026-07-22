@@ -17,6 +17,11 @@ const validateField = (field, value) => {
     return null;
   }
 
+  // Image and video fields store Base64 data URLs — skip text-based validation
+  if (field.type === 'image' || field.type === 'video') {
+    return null;
+  }
+
   if (field.type === 'email') {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
