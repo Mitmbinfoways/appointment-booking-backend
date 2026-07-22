@@ -549,7 +549,7 @@ const updateSlotSettings = async (req, res, next) => {
 // Get Bookings
 const getBookings = async (req, res, next) => {
   try {
-    const { status, date, page = 1, limit = 1000 } = req.query;
+    const { status, date, search, startDate, endDate, page = 1, limit = 1000 } = req.query;
     const adminId = req.user._id;
 
     const idList = [adminId];
@@ -561,6 +561,36 @@ const getBookings = async (req, res, next) => {
 
     if (status) filter.status = status;
     if (date) filter.slotDate = date;
+
+    // Date range filter
+    if (startDate || endDate) {
+      filter.slotDate = filter.slotDate || {};
+      if (typeof filter.slotDate === "string") {
+        // If exact date was already set, skip range
+      } else {
+        if (startDate) filter.slotDate.$gte = startDate;
+        if (endDate) filter.slotDate.$lte = endDate;
+      }
+    }
+
+    // Search filter: search across bookingId and dynamicResponses values
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      const formConfig = await FormConfig.findOne({ adminId: req.user._id });
+      const searchConditions = [
+        { bookingId: searchRegex },
+      ];
+      if (formConfig && formConfig.fields) {
+        formConfig.fields.forEach((field) => {
+          if (field.type !== "image" && field.type !== "video") {
+            searchConditions.push({
+              [`dynamicResponses.${field.fieldKey}`]: searchRegex,
+            });
+          }
+        });
+      }
+      filter.$or = searchConditions;
+    }
 
     const skip = (page - 1) * limit;
 
@@ -595,7 +625,7 @@ const getBookings = async (req, res, next) => {
 const getAdminBookingsSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { status, date, page = 1, limit = 1000 } = req.query;
+    const { status, date, search, startDate, endDate, page = 1, limit = 1000 } = req.query;
 
     const idList = [adminId];
     if (mongoose.Types.ObjectId.isValid(adminId)) {
@@ -606,6 +636,36 @@ const getAdminBookingsSuper = async (req, res, next) => {
 
     if (status) filter.status = status;
     if (date) filter.slotDate = date;
+
+    // Date range filter
+    if (startDate || endDate) {
+      filter.slotDate = filter.slotDate || {};
+      if (typeof filter.slotDate === "string") {
+        // If exact date was already set, skip range
+      } else {
+        if (startDate) filter.slotDate.$gte = startDate;
+        if (endDate) filter.slotDate.$lte = endDate;
+      }
+    }
+
+    // Search filter
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      const formConfig = await FormConfig.findOne({ adminId });
+      const searchConditions = [
+        { bookingId: searchRegex },
+      ];
+      if (formConfig && formConfig.fields) {
+        formConfig.fields.forEach((field) => {
+          if (field.type !== "image" && field.type !== "video") {
+            searchConditions.push({
+              [`dynamicResponses.${field.fieldKey}`]: searchRegex,
+            });
+          }
+        });
+      }
+      filter.$or = searchConditions;
+    }
 
     const skip = (page - 1) * limit;
 
