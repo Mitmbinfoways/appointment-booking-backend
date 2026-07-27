@@ -15,10 +15,10 @@ const {
 router.use(verifyToken);
 
 // Admin standard routes
-router.post('/', restrictTo('Admin'), createHoliday);
-router.get('/', restrictTo('Admin'), getHolidays);
-router.put('/:id', restrictTo('Admin'), updateHoliday);
-router.delete('/:id', restrictTo('Admin'), deleteHoliday);
+router.post('/', restrictTo('Admin', 'SuperAdmin'), createHoliday);
+router.get('/', restrictTo('Admin', 'SuperAdmin'), getHolidays);
+router.put('/:id', restrictTo('Admin', 'SuperAdmin'), updateHoliday);
+router.delete('/:id', restrictTo('Admin', 'SuperAdmin'), deleteHoliday);
 
 // SuperAdmin on-behalf routes
 router.get('/admin/:adminId', restrictTo('SuperAdmin'), getAdminHolidaysSuper);

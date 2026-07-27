@@ -25,7 +25,8 @@ const {
   updateAdminSlotSettingsSuper,
   getAdminBookingsSuper,
   updateBookingSuper,
-  deleteBookingSuper
+  deleteBookingSuper,
+  getDashboardStatsAPI,
 } = require('../Controllers/user.controller');
 
 // ==========================================
@@ -38,10 +39,12 @@ router.post('/admin/auth/login', login);
 // ==========================================
 router.use(verifyToken);
 
-// Common Profile Settings (Admins & SuperAdmins)
+// Common Profile Settings & Dashboard Stats (Admins & SuperAdmins)
 router.get('/admin/profile', getProfile);
 router.put('/admin/profile', updateProfile);
 router.put('/admin/profile/change-password', updatePassword);
+router.post('/admin/dashboard/stats', getDashboardStatsAPI);
+router.get('/admin/dashboard/stats', getDashboardStatsAPI);
 
 // ==========================================
 // 3. SuperAdmin Restricted Routes
@@ -64,14 +67,14 @@ router.delete('/superadmin/bookings/:id', restrictTo('SuperAdmin'), deleteBookin
 // ==========================================
 // 4. Admin Restricted Routes
 // ==========================================
-router.get('/admin/form-config', restrictTo('Admin'), getFormConfig);
-router.put('/admin/form-config', restrictTo('Admin'), updateFormConfig);
+router.get('/admin/form-config', restrictTo('Admin', 'SuperAdmin'), getFormConfig);
+router.put('/admin/form-config', restrictTo('Admin', 'SuperAdmin'), updateFormConfig);
 
-router.get('/admin/slot-settings', restrictTo('Admin'), getSlotSettings);
-router.put('/admin/slot-settings', restrictTo('Admin'), updateSlotSettings);
+router.get('/admin/slot-settings', restrictTo('Admin', 'SuperAdmin'), getSlotSettings);
+router.put('/admin/slot-settings', restrictTo('Admin', 'SuperAdmin'), updateSlotSettings);
 
-router.get('/admin/bookings', restrictTo('Admin'), getBookings);
-router.put('/admin/bookings/:id', restrictTo('Admin'), updateBooking);
-router.delete('/admin/bookings/:id', restrictTo('Admin'), deleteBooking);
+router.get('/admin/bookings', restrictTo('Admin', 'SuperAdmin'), getBookings);
+router.put('/admin/bookings/:id', restrictTo('Admin', 'SuperAdmin'), updateBooking);
+router.delete('/admin/bookings/:id', restrictTo('Admin', 'SuperAdmin'), deleteBooking);
 
 module.exports = router;

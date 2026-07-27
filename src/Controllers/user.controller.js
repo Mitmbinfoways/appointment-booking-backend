@@ -263,12 +263,19 @@ const createAdmin = async (req, res, next) => {
   }
 };
 
-// Get all non-deleted Admins
+// Get all non-deleted Admins (with optional status filter: active/inactive)
 const getAdmins = async (req, res, next) => {
   try {
-    const admins = await User.find({ role: "Admin", isDeleted: false }).select(
-      "-password",
-    );
+    const { status } = req.query;
+    const filter = { role: "Admin", isDeleted: false };
+
+    if (status === "active") {
+      filter.isActive = true;
+    } else if (status === "inactive") {
+      filter.isActive = false;
+    }
+
+    const admins = await User.find(filter).select("-password");
 
     let modified = false;
     for (const admin of admins) {
@@ -280,7 +287,7 @@ const getAdmins = async (req, res, next) => {
     }
 
     const finalAdmins = modified
-      ? await User.find({ role: "Admin", isDeleted: false }).select("-password")
+      ? await User.find(filter).select("-password")
       : admins;
 
     res
@@ -565,7 +572,9 @@ const getBookings = async (req, res, next) => {
 
     const filter = { adminId: { $in: idList } };
 
-    if (status) filter.status = status;
+    if (status && status.trim()) {
+      filter.status = new RegExp(`^${status.trim()}$`, "i");
+    }
     if (date) filter.slotDate = date;
 
     // Date range filter
@@ -974,6 +983,83 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
   }
 };
 
+// Get Dashboard Stats (Payload type parameter: 'Admin' or 'SuperAdmin')
+const getDashboardStatsAPI = async (req, res, next) => {
+  try {
+    const type = req.body?.type || req.query?.type || req.user?.role || 'Admin';
+
+    if (type === 'SuperAdmin') {
+      const totalAdmins = await User.countDocuments({ role: 'Admin', isDeleted: false });
+      const activeAdmins = await User.countDocuments({ role: 'Admin', isActive: true, isDeleted: false });
+      const inactiveAdmins = await User.countDocuments({ role: 'Admin', isActive: false, isDeleted: false });
+
+      res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            type: 'SuperAdmin',
+            totalAdmins,
+            activeAdmins,
+            inactiveAdmins,
+          },
+          "SuperAdmin dashboard stats retrieved successfully."
+        )
+      );
+    } else {
+      // Regular Admin Dashboard Stats
+      const adminId = req.user._id;
+
+      const formatYMD = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + distanceToMonday);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const startOfWeekStr = formatYMD(monday);
+      const endOfWeekStr = formatYMD(sunday);
+      const todayStr = formatYMD(now);
+
+      const totalBookings = await Booking.countDocuments({ adminId });
+      const todayBookings = await Booking.countDocuments({ adminId, slotDate: todayStr });
+      const weekBookings = await Booking.countDocuments({
+        adminId,
+        slotDate: { $gte: startOfWeekStr, $lte: endOfWeekStr }
+      });
+      const pendingBookings = await Booking.countDocuments({
+        adminId,
+        status: new RegExp("^pending$", "i")
+      });
+
+      res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            type: 'Admin',
+            totalBookings,
+            weekBookings,
+            todayBookings,
+            pendingBookings,
+          },
+          "Admin dashboard stats retrieved successfully."
+        )
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   getProfile,
@@ -999,4 +1085,5 @@ module.exports = {
   getAdminBookingsSuper,
   updateBookingSuper,
   deleteBookingSuper,
+  getDashboardStatsAPI,
 };
