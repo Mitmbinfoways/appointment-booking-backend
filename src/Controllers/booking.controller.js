@@ -270,6 +270,7 @@ const getAvailableSlots = async (req, res, next) => {
 
     const responsePayload = {
       slots: calculatedSlots,
+      minAdvanceNoticeMinutes: settings?.minAdvanceNoticeMinutes || 0,
       userTimeZone,
       userTimezoneLabel: getTimezoneLabel(userTimeZone),
       adminTimeZone,

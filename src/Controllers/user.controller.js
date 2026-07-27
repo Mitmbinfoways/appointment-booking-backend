@@ -509,7 +509,7 @@ const getSlotSettings = async (req, res, next) => {
 // Update Slot Settings
 const updateSlotSettings = async (req, res, next) => {
   try {
-    const { slotDurationMinutes, capacityPerSlot, workingDays, breakTimes } =
+    const { slotDurationMinutes, capacityPerSlot, minAdvanceNoticeMinutes, workingDays, breakTimes } =
       req.body;
 
     let settings = await SlotSettings.findOne({ adminId: req.user._id });
@@ -528,6 +528,12 @@ const updateSlotSettings = async (req, res, next) => {
         return next(new ApiError(400, "Capacity per slot must be at least 1."));
       }
       settings.capacityPerSlot = capacityPerSlot;
+    }
+    if (typeof minAdvanceNoticeMinutes === "number") {
+      if (minAdvanceNoticeMinutes < 0) {
+        return next(new ApiError(400, "Minimum advance notice cannot be negative."));
+      }
+      settings.minAdvanceNoticeMinutes = minAdvanceNoticeMinutes;
     }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;
@@ -912,7 +918,7 @@ const getAdminSlotSettingsSuper = async (req, res, next) => {
 const updateAdminSlotSettingsSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { slotDurationMinutes, capacityPerSlot, workingDays, breakTimes } =
+    const { slotDurationMinutes, capacityPerSlot, minAdvanceNoticeMinutes, workingDays, breakTimes } =
       req.body;
 
     const admin = await User.findOne({
@@ -940,6 +946,12 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
         return next(new ApiError(400, "Capacity per slot must be at least 1."));
       }
       settings.capacityPerSlot = capacityPerSlot;
+    }
+    if (typeof minAdvanceNoticeMinutes === "number") {
+      if (minAdvanceNoticeMinutes < 0) {
+        return next(new ApiError(400, "Minimum advance notice cannot be negative."));
+      }
+      settings.minAdvanceNoticeMinutes = minAdvanceNoticeMinutes;
     }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;

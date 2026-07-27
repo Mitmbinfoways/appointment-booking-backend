@@ -44,6 +44,11 @@ const SlotSettingsSchema = new mongoose.Schema({
     required: true,
     default: 1 // If set to 5, the slot remains "Available" until 5 users book it.
   },
+  minAdvanceNoticeMinutes: {
+    type: Number,
+    required: true,
+    default: 0 // Minimum advance notice required before slot start time (e.g. 15, 30, 60 mins)
+  },
   workingDays: [WorkingDaySchema],
   breakTimes: [BreakTimeSchema]
 }, { timestamps: true });
