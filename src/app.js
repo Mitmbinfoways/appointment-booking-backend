@@ -22,6 +22,7 @@ const bookingRoutes = require("./Routes/booking.routes");
 const userModuleRoutes = require("./Routes/userModule.routes");
 const medicineRoutes = require("./Routes/medicine.routes");
 const userManagementRoutes = require("./Routes/userManagement.routes");
+const prescriptionRoutes = require("./Routes/prescription.routes");
 
 // Register Routes
 app.use("/api/holidays", holidayRoutes);
@@ -29,6 +30,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/user-modules", userModuleRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/user-management", userManagementRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api", userRoutes);
 
 app.get("/", (req, res) => {

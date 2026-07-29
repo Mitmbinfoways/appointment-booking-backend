@@ -3,8 +3,10 @@ const UserModule = require("../Models/UserModule");
 
 // Helper to verify medicine module access for Admin
 const checkMedicineAccess = async (adminId) => {
+  if (!adminId) return false;
   const userModule = await UserModule.findOne({ adminId });
-  return userModule && userModule.medicineModule === true;
+  if (!userModule) return true;
+  return userModule.medicineModule !== false;
 };
 
 // Get all medicines for an Admin

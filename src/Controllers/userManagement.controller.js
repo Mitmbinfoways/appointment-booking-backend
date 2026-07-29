@@ -3,8 +3,10 @@ const UserModule = require("../Models/UserModule");
 
 // Helper to verify user management module access for Admin
 const checkUserManagementAccess = async (adminId) => {
+  if (!adminId) return false;
   const userModule = await UserModule.findOne({ adminId });
-  return userModule && userModule.userManagementModule === true;
+  if (!userModule) return true;
+  return userModule.userManagementModule !== false;
 };
 
 // Get all sub-users for an Admin
