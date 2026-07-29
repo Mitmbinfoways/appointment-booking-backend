@@ -34,6 +34,10 @@ const PrescribedMedicineSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  timing: {
+    type: String,
+    default: "After Food",
+  },
 });
 
 const PrescriptionSchema = new mongoose.Schema(
