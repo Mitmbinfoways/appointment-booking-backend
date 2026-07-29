@@ -19,10 +19,16 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 const userRoutes = require("./Routes/user.routes");
 const holidayRoutes = require("./Routes/holiday.routes");
 const bookingRoutes = require("./Routes/booking.routes");
+const userModuleRoutes = require("./Routes/userModule.routes");
+const medicineRoutes = require("./Routes/medicine.routes");
+const userManagementRoutes = require("./Routes/userManagement.routes");
 
 // Register Routes
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/user-modules", userModuleRoutes);
+app.use("/api/medicines", medicineRoutes);
+app.use("/api/user-management", userManagementRoutes);
 app.use("/api", userRoutes);
 
 app.get("/", (req, res) => {
