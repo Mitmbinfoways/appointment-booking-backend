@@ -38,6 +38,50 @@ exports.getPrescriptionByBooking = async (req, res) => {
   }
 };
 
+// Get Medicine Name Suggestions from past prescriptions
+exports.getMedicineSuggestions = async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    if (!search || search.trim().length === 0) {
+      return res.status(200).json({ statusCode: 200, data: [] });
+    }
+
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const suggestions = await Prescription.aggregate([
+      { $unwind: "$medicines" },
+      {
+        $match: {
+          "medicines.name": { $regex: escapedSearch, $options: "i" },
+        },
+      },
+      {
+        $group: {
+          _id: { name: "$medicines.name", dosage: "$medicines.dosage" },
+        },
+      },
+      { $limit: 10 },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id.name",
+          dosage: "$_id.dosage",
+        },
+      },
+    ]);
+
+    return res.status(200).json({ statusCode: 200, data: suggestions });
+  } catch (error) {
+    console.error("Error fetching medicine suggestions:", error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
 // Create or Update Prescription
 exports.savePrescription = async (req, res) => {
   try {
