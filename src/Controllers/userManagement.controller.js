@@ -1,5 +1,7 @@
 const SubUser = require("../Models/SubUser");
 const UserModule = require("../Models/UserModule");
+const User = require("../Models/User");
+const mongoose = require("mongoose");
 
 // Helper to verify user management module access for Admin
 const checkUserManagementAccess = async (adminId) => {
@@ -48,7 +50,7 @@ exports.getSubUsers = async (req, res) => {
 // Create a new sub-user record
 exports.createSubUser = async (req, res) => {
   try {
-    const { adminId, name, email, phoneNumber, role } = req.body;
+    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } = req.body;
 
     if (!adminId || !name || !email) {
       return res.status(400).json({
@@ -71,6 +73,7 @@ exports.createSubUser = async (req, res) => {
       email,
       phoneNumber: phoneNumber || "",
       role: role || "Staff",
+      hasMedicalAccess: Boolean(hasMedicalAccess),
       isActive: true,
     });
 
@@ -95,7 +98,7 @@ exports.createSubUser = async (req, res) => {
 exports.updateSubUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminId, name, email, phoneNumber, role } = req.body;
+    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } = req.body;
 
     if (!id || !adminId) {
       return res.status(400).json({
@@ -124,6 +127,7 @@ exports.updateSubUser = async (req, res) => {
     if (email !== undefined) subUser.email = email;
     if (phoneNumber !== undefined) subUser.phoneNumber = phoneNumber;
     if (role !== undefined) subUser.role = role;
+    if (hasMedicalAccess !== undefined) subUser.hasMedicalAccess = Boolean(hasMedicalAccess);
 
     await subUser.save();
 
@@ -134,6 +138,76 @@ exports.updateSubUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating sub-user:", error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
+// Get Users / SubUsers who have Medical Access for prescription assignment dropdown
+exports.getMedicalSubUsers = async (req, res) => {
+  try {
+    const { adminId } = req.query;
+    const list = [];
+
+    // 1. Fetch Tenant Admins whose UserModule has medicalModule: true enabled
+    const medicalModules = await UserModule.find({ medicalModule: true });
+    const medicalAdminIds = medicalModules.map((m) => m.adminId);
+
+    if (medicalAdminIds.length > 0) {
+      const medicalAdmins = await User.find({
+        _id: { $in: medicalAdminIds },
+        isDeleted: false,
+        isActive: true,
+      }).select("username email businessName role phoneNumber");
+
+      medicalAdmins.forEach((adm) => {
+        list.push({
+          _id: adm._id,
+          name: `${adm.username}${adm.businessName ? ` (${adm.businessName})` : ""}`,
+          email: adm.email,
+          role: "Medical Admin / Pharmacy",
+          phoneNumber: adm.phoneNumber || "",
+          isMainAdmin: true,
+        });
+      });
+    }
+
+    // 2. Fetch SubUsers who have medical access or belong to this adminId
+    const subUserFilter = { isActive: true };
+    if (adminId) {
+      const idList = [adminId];
+      if (mongoose.Types.ObjectId.isValid(adminId)) {
+        idList.push(new mongoose.Types.ObjectId(adminId));
+      }
+      subUserFilter.$or = [
+        { adminId: { $in: idList } },
+        { hasMedicalAccess: true }
+      ];
+    }
+
+    const subUsers = await SubUser.find(subUserFilter).sort({ name: 1 });
+    subUsers.forEach((su) => {
+      if (!list.some((item) => item._id.toString() === su._id.toString())) {
+        list.push({
+          _id: su._id,
+          name: su.name,
+          email: su.email,
+          role: su.role || "Medical Staff",
+          phoneNumber: su.phone || "",
+          hasMedicalAccess: su.hasMedicalAccess,
+        });
+      }
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      data: list,
+    });
+  } catch (error) {
+    console.error("Error fetching medical users:", error);
     return res.status(500).json({
       statusCode: 500,
       message: "Internal server error.",

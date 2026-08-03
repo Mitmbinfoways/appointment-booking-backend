@@ -29,6 +29,10 @@ const SubUserSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  hasMedicalAccess: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

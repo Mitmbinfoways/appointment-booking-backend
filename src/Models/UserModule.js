@@ -14,6 +14,10 @@ const UserModuleSchema = new mongoose.Schema({
   userManagementModule: {
     type: Boolean,
     default: false
+  },
+  medicalModule: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

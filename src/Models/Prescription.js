@@ -71,7 +71,7 @@ const PrescriptionSchema = new mongoose.Schema(
     businessName: {
       type: String,
       default: "",
-    },
+    }, 
     diagnosis: {
       type: String,
       default: "",
@@ -81,6 +81,19 @@ const PrescriptionSchema = new mongoose.Schema(
       default: "",
     },
     medicines: [PrescribedMedicineSchema],
+    sentToMedicalUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    fulfillmentStatus: {
+      type: String,
+      enum: ["not_sent", "sent", "dispensed", "completed"],
+      default: "not_sent",
+    },
+    sentAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
