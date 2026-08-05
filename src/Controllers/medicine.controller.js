@@ -48,7 +48,16 @@ exports.getMedicines = async (req, res) => {
 // Create a new medicine entry
 exports.createMedicine = async (req, res) => {
   try {
-    const { adminId, name, dosage, category, stock, price, expiryDate, manufacturer } = req.body;
+    const {
+      adminId,
+      name,
+      dosage,
+      category,
+      stock,
+      price,
+      expiryDate,
+      manufacturer,
+    } = req.body;
 
     if (!adminId || !name) {
       return res.status(400).json({
@@ -97,7 +106,16 @@ exports.createMedicine = async (req, res) => {
 exports.updateMedicine = async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminId, name, dosage, category, stock, price, expiryDate, manufacturer } = req.body;
+    const {
+      adminId,
+      name,
+      dosage,
+      category,
+      stock,
+      price,
+      expiryDate,
+      manufacturer,
+    } = req.body;
 
     if (!id || !adminId) {
       return res.status(400).json({

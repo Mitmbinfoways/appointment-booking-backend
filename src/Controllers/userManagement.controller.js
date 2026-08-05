@@ -50,7 +50,8 @@ exports.getSubUsers = async (req, res) => {
 // Create a new sub-user record
 exports.createSubUser = async (req, res) => {
   try {
-    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } = req.body;
+    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } =
+      req.body;
 
     if (!adminId || !name || !email) {
       return res.status(400).json({
@@ -98,7 +99,8 @@ exports.createSubUser = async (req, res) => {
 exports.updateSubUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } = req.body;
+    const { adminId, name, email, phoneNumber, role, hasMedicalAccess } =
+      req.body;
 
     if (!id || !adminId) {
       return res.status(400).json({
@@ -127,7 +129,8 @@ exports.updateSubUser = async (req, res) => {
     if (email !== undefined) subUser.email = email;
     if (phoneNumber !== undefined) subUser.phoneNumber = phoneNumber;
     if (role !== undefined) subUser.role = role;
-    if (hasMedicalAccess !== undefined) subUser.hasMedicalAccess = Boolean(hasMedicalAccess);
+    if (hasMedicalAccess !== undefined)
+      subUser.hasMedicalAccess = Boolean(hasMedicalAccess);
 
     await subUser.save();
 
@@ -184,7 +187,7 @@ exports.getMedicalSubUsers = async (req, res) => {
       }
       subUserFilter.$or = [
         { adminId: { $in: idList } },
-        { hasMedicalAccess: true }
+        { hasMedicalAccess: true },
       ];
     }
 

@@ -1,48 +1,66 @@
-const Holiday = require('../Models/Holiday');
-const ApiError = require('../Utils/ApiError');
-const ApiResponse = require('../Utils/ApiResponse');
-const { timeToMinutes } = require('../Utils/slotGenerator');
+const Holiday = require("../Models/Holiday");
+const ApiError = require("../Utils/ApiError");
+const ApiResponse = require("../Utils/ApiResponse");
+const { timeToMinutes } = require("../Utils/slotGenerator");
 
 // Create Holiday / Off-Day
 const createHoliday = async (req, res, next) => {
   try {
-    const { date, holidayType, halfDayType, customStartTime, customEndTime, reason } = req.body;
+    const {
+      date,
+      holidayType,
+      halfDayType,
+      customStartTime,
+      customEndTime,
+      reason,
+    } = req.body;
     if (!date) {
-      return next(new ApiError(400, 'Date is required.'));
+      return next(new ApiError(400, "Date is required."));
     }
 
-    const adminTimezone = req.user?.timezone || 'UTC';
-    const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: adminTimezone });
+    const adminTimezone = req.user?.timezone || "UTC";
+    const todayISO = new Date().toLocaleDateString("sv-SE", {
+      timeZone: adminTimezone,
+    });
     if (date < todayISO) {
-      return next(new ApiError(400, 'Cannot set holidays for past dates.'));
+      return next(new ApiError(400, "Cannot set holidays for past dates."));
     }
 
     // Check if holiday already exists for this date and admin
     const existing = await Holiday.findOne({ adminId: req.user._id, date });
     if (existing) {
-      return next(new ApiError(400, `Holiday already exists for date ${date}.`));
+      return next(
+        new ApiError(400, `Holiday already exists for date ${date}.`),
+      );
     }
 
-    const type = holidayType || 'full';
+    const type = holidayType || "full";
     let isFullDay = true;
     let finalStartTime = undefined;
     let finalEndTime = undefined;
 
-    if (type === 'half') {
+    if (type === "half") {
       isFullDay = false;
-      if (halfDayType === 'first_half') {
-        finalStartTime = '13:00';
-        finalEndTime = '17:00';
+      if (halfDayType === "first_half") {
+        finalStartTime = "13:00";
+        finalEndTime = "17:00";
       } else {
-        finalStartTime = '09:00';
-        finalEndTime = '13:00';
+        finalStartTime = "09:00";
+        finalEndTime = "13:00";
       }
-    } else if (type === 'custom') {
+    } else if (type === "custom") {
       if (!customStartTime || !customEndTime) {
-        return next(new ApiError(400, 'customStartTime and customEndTime are required for custom holiday.'));
+        return next(
+          new ApiError(
+            400,
+            "customStartTime and customEndTime are required for custom holiday.",
+          ),
+        );
       }
       if (timeToMinutes(customStartTime) >= timeToMinutes(customEndTime)) {
-        return next(new ApiError(400, 'Custom start time must be earlier than end time.'));
+        return next(
+          new ApiError(400, "Custom start time must be earlier than end time."),
+        );
       }
       isFullDay = false;
       finalStartTime = customStartTime;
@@ -53,15 +71,17 @@ const createHoliday = async (req, res, next) => {
       adminId: req.user._id,
       date,
       holidayType: type,
-      halfDayType: type === 'half' ? halfDayType : undefined,
+      halfDayType: type === "half" ? halfDayType : undefined,
       isFullDay,
       customStartTime: finalStartTime,
       customEndTime: finalEndTime,
-      reason
+      reason,
     });
 
     await holiday.save();
-    res.status(201).json(new ApiResponse(201, holiday, 'Holiday created successfully.'));
+    res
+      .status(201)
+      .json(new ApiResponse(201, holiday, "Holiday created successfully."));
   } catch (error) {
     next(error);
   }
@@ -71,11 +91,18 @@ const createHoliday = async (req, res, next) => {
 const updateHoliday = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { date, holidayType, halfDayType, customStartTime, customEndTime, reason } = req.body;
+    const {
+      date,
+      holidayType,
+      halfDayType,
+      customStartTime,
+      customEndTime,
+      reason,
+    } = req.body;
 
     const holiday = await Holiday.findOne({ _id: id, adminId: req.user._id });
     if (!holiday) {
-      return next(new ApiError(404, 'Holiday not found or not authorized.'));
+      return next(new ApiError(404, "Holiday not found or not authorized."));
     }
 
     if (date) holiday.date = date;
@@ -83,45 +110,48 @@ const updateHoliday = async (req, res, next) => {
 
     if (holidayType) {
       holiday.holidayType = holidayType;
-      if (holidayType === 'full') {
+      if (holidayType === "full") {
         holiday.isFullDay = true;
         holiday.halfDayType = null;
         holiday.customStartTime = undefined;
         holiday.customEndTime = undefined;
-      } else if (holidayType === 'half') {
+      } else if (holidayType === "half") {
         holiday.isFullDay = false;
-        holiday.halfDayType = halfDayType || holiday.halfDayType || 'first_half';
-        if (holiday.halfDayType === 'first_half') {
-          holiday.customStartTime = '13:00';
-          holiday.customEndTime = '17:00';
+        holiday.halfDayType =
+          halfDayType || holiday.halfDayType || "first_half";
+        if (holiday.halfDayType === "first_half") {
+          holiday.customStartTime = "13:00";
+          holiday.customEndTime = "17:00";
         } else {
-          holiday.customStartTime = '09:00';
-          holiday.customEndTime = '13:00';
+          holiday.customStartTime = "09:00";
+          holiday.customEndTime = "13:00";
         }
-      } else if (holidayType === 'custom') {
+      } else if (holidayType === "custom") {
         holiday.isFullDay = false;
         holiday.halfDayType = null;
         if (customStartTime) holiday.customStartTime = customStartTime;
         if (customEndTime) holiday.customEndTime = customEndTime;
       }
     } else {
-      if (holiday.holidayType === 'half' && halfDayType) {
+      if (holiday.holidayType === "half" && halfDayType) {
         holiday.halfDayType = halfDayType;
-        if (halfDayType === 'first_half') {
-          holiday.customStartTime = '13:00';
-          holiday.customEndTime = '17:00';
+        if (halfDayType === "first_half") {
+          holiday.customStartTime = "13:00";
+          holiday.customEndTime = "17:00";
         } else {
-          holiday.customStartTime = '09:00';
-          holiday.customEndTime = '13:00';
+          holiday.customStartTime = "09:00";
+          holiday.customEndTime = "13:00";
         }
-      } else if (holiday.holidayType === 'custom') {
+      } else if (holiday.holidayType === "custom") {
         if (customStartTime) holiday.customStartTime = customStartTime;
         if (customEndTime) holiday.customEndTime = customEndTime;
       }
     }
 
     await holiday.save();
-    res.status(200).json(new ApiResponse(200, holiday, 'Holiday updated successfully.'));
+    res
+      .status(200)
+      .json(new ApiResponse(200, holiday, "Holiday updated successfully."));
   } catch (error) {
     next(error);
   }
@@ -130,8 +160,12 @@ const updateHoliday = async (req, res, next) => {
 // Get Holidays
 const getHolidays = async (req, res, next) => {
   try {
-    const holidays = await Holiday.find({ adminId: req.user._id }).sort({ date: 1 });
-    res.status(200).json(new ApiResponse(200, holidays, 'Holidays retrieved successfully.'));
+    const holidays = await Holiday.find({ adminId: req.user._id }).sort({
+      date: 1,
+    });
+    res
+      .status(200)
+      .json(new ApiResponse(200, holidays, "Holidays retrieved successfully."));
   } catch (error) {
     next(error);
   }
@@ -141,12 +175,17 @@ const getHolidays = async (req, res, next) => {
 const deleteHoliday = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const holiday = await Holiday.findOneAndDelete({ _id: id, adminId: req.user._id });
+    const holiday = await Holiday.findOneAndDelete({
+      _id: id,
+      adminId: req.user._id,
+    });
     if (!holiday) {
-      return next(new ApiError(404, 'Holiday not found or not authorized.'));
+      return next(new ApiError(404, "Holiday not found or not authorized."));
     }
 
-    res.status(200).json(new ApiResponse(200, null, 'Holiday deleted successfully.'));
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Holiday deleted successfully."));
   } catch (error) {
     next(error);
   }
@@ -157,7 +196,15 @@ const getAdminHolidaysSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
     const holidays = await Holiday.find({ adminId }).sort({ date: 1 });
-    res.status(200).json(new ApiResponse(200, holidays, 'Admin holidays retrieved successfully.'));
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          holidays,
+          "Admin holidays retrieved successfully.",
+        ),
+      );
   } catch (error) {
     next(error);
   }
@@ -167,36 +214,45 @@ const getAdminHolidaysSuper = async (req, res, next) => {
 const createAdminHolidaySuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { date, holidayType, halfDayType, customStartTime, customEndTime, reason } = req.body;
+    const {
+      date,
+      holidayType,
+      halfDayType,
+      customStartTime,
+      customEndTime,
+      reason,
+    } = req.body;
     if (!date) {
-      return next(new ApiError(400, 'Date is required.'));
+      return next(new ApiError(400, "Date is required."));
     }
 
-    const todayISO = new Date().toISOString().split('T')[0];
+    const todayISO = new Date().toISOString().split("T")[0];
     if (date < todayISO) {
-      return next(new ApiError(400, 'Cannot set holidays for past dates.'));
+      return next(new ApiError(400, "Cannot set holidays for past dates."));
     }
 
     const existing = await Holiday.findOne({ adminId, date });
     if (existing) {
-      return next(new ApiError(400, `Holiday already exists for date ${date}.`));
+      return next(
+        new ApiError(400, `Holiday already exists for date ${date}.`),
+      );
     }
 
-    const type = holidayType || 'full';
+    const type = holidayType || "full";
     let isFullDay = true;
     let finalStartTime = undefined;
     let finalEndTime = undefined;
 
-    if (type === 'half') {
+    if (type === "half") {
       isFullDay = false;
-      if (halfDayType === 'first_half') {
-        finalStartTime = '13:00';
-        finalEndTime = '17:00';
+      if (halfDayType === "first_half") {
+        finalStartTime = "13:00";
+        finalEndTime = "17:00";
       } else {
-        finalStartTime = '09:00';
-        finalEndTime = '13:00';
+        finalStartTime = "09:00";
+        finalEndTime = "13:00";
       }
-    } else if (type === 'custom') {
+    } else if (type === "custom") {
       isFullDay = false;
       finalStartTime = customStartTime;
       finalEndTime = customEndTime;
@@ -206,15 +262,17 @@ const createAdminHolidaySuper = async (req, res, next) => {
       adminId,
       date,
       holidayType: type,
-      halfDayType: type === 'half' ? halfDayType : undefined,
+      halfDayType: type === "half" ? halfDayType : undefined,
       isFullDay,
       customStartTime: finalStartTime,
       customEndTime: finalEndTime,
-      reason
+      reason,
     });
 
     await holiday.save();
-    res.status(201).json(new ApiResponse(201, holiday, 'Holiday created successfully.'));
+    res
+      .status(201)
+      .json(new ApiResponse(201, holiday, "Holiday created successfully."));
   } catch (error) {
     next(error);
   }
@@ -224,11 +282,18 @@ const createAdminHolidaySuper = async (req, res, next) => {
 const updateAdminHolidaySuper = async (req, res, next) => {
   try {
     const { adminId, id } = req.params;
-    const { date, holidayType, halfDayType, customStartTime, customEndTime, reason } = req.body;
+    const {
+      date,
+      holidayType,
+      halfDayType,
+      customStartTime,
+      customEndTime,
+      reason,
+    } = req.body;
 
     const holiday = await Holiday.findOne({ _id: id, adminId });
     if (!holiday) {
-      return next(new ApiError(404, 'Holiday not found for this admin.'));
+      return next(new ApiError(404, "Holiday not found for this admin."));
     }
 
     if (date) holiday.date = date;
@@ -236,45 +301,48 @@ const updateAdminHolidaySuper = async (req, res, next) => {
 
     if (holidayType) {
       holiday.holidayType = holidayType;
-      if (holidayType === 'full') {
+      if (holidayType === "full") {
         holiday.isFullDay = true;
         holiday.halfDayType = null;
         holiday.customStartTime = undefined;
         holiday.customEndTime = undefined;
-      } else if (holidayType === 'half') {
+      } else if (holidayType === "half") {
         holiday.isFullDay = false;
-        holiday.halfDayType = halfDayType || holiday.halfDayType || 'first_half';
-        if (holiday.halfDayType === 'first_half') {
-          holiday.customStartTime = '13:00';
-          holiday.customEndTime = '17:00';
+        holiday.halfDayType =
+          halfDayType || holiday.halfDayType || "first_half";
+        if (holiday.halfDayType === "first_half") {
+          holiday.customStartTime = "13:00";
+          holiday.customEndTime = "17:00";
         } else {
-          holiday.customStartTime = '09:00';
-          holiday.customEndTime = '13:00';
+          holiday.customStartTime = "09:00";
+          holiday.customEndTime = "13:00";
         }
-      } else if (holidayType === 'custom') {
+      } else if (holidayType === "custom") {
         holiday.isFullDay = false;
         holiday.halfDayType = null;
         if (customStartTime) holiday.customStartTime = customStartTime;
         if (customEndTime) holiday.customEndTime = customEndTime;
       }
     } else {
-      if (holiday.holidayType === 'half' && halfDayType) {
+      if (holiday.holidayType === "half" && halfDayType) {
         holiday.halfDayType = halfDayType;
-        if (halfDayType === 'first_half') {
-          holiday.customStartTime = '13:00';
-          holiday.customEndTime = '17:00';
+        if (halfDayType === "first_half") {
+          holiday.customStartTime = "13:00";
+          holiday.customEndTime = "17:00";
         } else {
-          holiday.customStartTime = '09:00';
-          holiday.customEndTime = '13:00';
+          holiday.customStartTime = "09:00";
+          holiday.customEndTime = "13:00";
         }
-      } else if (holiday.holidayType === 'custom') {
+      } else if (holiday.holidayType === "custom") {
         if (customStartTime) holiday.customStartTime = customStartTime;
         if (customEndTime) holiday.customEndTime = customEndTime;
       }
     }
 
     await holiday.save();
-    res.status(200).json(new ApiResponse(200, holiday, 'Holiday updated successfully.'));
+    res
+      .status(200)
+      .json(new ApiResponse(200, holiday, "Holiday updated successfully."));
   } catch (error) {
     next(error);
   }
@@ -286,9 +354,11 @@ const deleteAdminHolidaySuper = async (req, res, next) => {
     const { adminId, id } = req.params;
     const holiday = await Holiday.findOneAndDelete({ _id: id, adminId });
     if (!holiday) {
-      return next(new ApiError(404, 'Holiday not found.'));
+      return next(new ApiError(404, "Holiday not found."));
     }
-    res.status(200).json(new ApiResponse(200, null, 'Holiday deleted successfully.'));
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Holiday deleted successfully."));
   } catch (error) {
     next(error);
   }
@@ -302,5 +372,5 @@ module.exports = {
   getAdminHolidaysSuper,
   createAdminHolidaySuper,
   updateAdminHolidaySuper,
-  deleteAdminHolidaySuper
+  deleteAdminHolidaySuper,
 };

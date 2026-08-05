@@ -25,7 +25,9 @@ exports.getPrescriptionByBooking = async (req, res) => {
       });
     }
 
-    const prescription = await Prescription.findOne({ bookingId }).populate("medicines.medicineId");
+    const prescription = await Prescription.findOne({ bookingId }).populate(
+      "medicines.medicineId",
+    );
 
     return res.status(200).json({
       statusCode: 200,
@@ -139,7 +141,10 @@ exports.savePrescription = async (req, res) => {
           const medRecord = await Medicine.findById(item.medicineId);
           if (medRecord) {
             const qtyToDeduct = Number(item.quantity) || 1;
-            medRecord.stock = Math.max(0, Number(medRecord.stock) - qtyToDeduct);
+            medRecord.stock = Math.max(
+              0,
+              Number(medRecord.stock) - qtyToDeduct,
+            );
             await medRecord.save();
           }
         }
@@ -165,7 +170,10 @@ exports.savePrescription = async (req, res) => {
       medicines: ProcessedMedicines,
     };
 
-    if (sentToMedicalUser && mongoose.Types.ObjectId.isValid(sentToMedicalUser)) {
+    if (
+      sentToMedicalUser &&
+      mongoose.Types.ObjectId.isValid(sentToMedicalUser)
+    ) {
       updatePayload.sentToMedicalUser = sentToMedicalUser;
       updatePayload.fulfillmentStatus = "sent";
       updatePayload.sentAt = new Date();
@@ -174,12 +182,14 @@ exports.savePrescription = async (req, res) => {
     const prescription = await Prescription.findOneAndUpdate(
       { bookingId },
       updatePayload,
-      { new: true, upsert: true }
+      { new: true, upsert: true },
     );
 
     return res.status(200).json({
       statusCode: 200,
-      message: sentToMedicalUser ? "Prescription sent to Medical User successfully!" : "Prescription saved successfully!",
+      message: sentToMedicalUser
+        ? "Prescription sent to Medical User successfully!"
+        : "Prescription saved successfully!",
       data: prescription,
     });
   } catch (error) {
@@ -212,7 +222,7 @@ exports.getMedicalPrescriptions = async (req, res) => {
     const filter = {
       $or: [
         { adminId: { $in: idList } },
-        { sentToMedicalUser: { $in: idList } }
+        { sentToMedicalUser: { $in: idList } },
       ],
       fulfillmentStatus: { $ne: "not_sent" },
     };
@@ -222,7 +232,10 @@ exports.getMedicalPrescriptions = async (req, res) => {
     }
 
     const rawPrescriptions = await Prescription.find(filter)
-      .populate("sentToMedicalUser", "name username email phoneNumber phone role businessName")
+      .populate(
+        "sentToMedicalUser",
+        "name username email phoneNumber phone role businessName",
+      )
       .populate("bookingId")
       .populate("medicines.medicineId")
       .sort({ updatedAt: -1 })
@@ -236,7 +249,9 @@ exports.getMedicalPrescriptions = async (req, res) => {
           p.sentToMedicalUser.name = `${p.sentToMedicalUser.username}${p.sentToMedicalUser.businessName ? ` (${p.sentToMedicalUser.businessName})` : ""}`;
         }
       } else if (p.sentToMedicalUser) {
-        const adminUser = await User.findById(p.sentToMedicalUser).select("username email businessName role phoneNumber");
+        const adminUser = await User.findById(p.sentToMedicalUser).select(
+          "username email businessName role phoneNumber",
+        );
         if (adminUser) {
           p.sentToMedicalUser = {
             _id: adminUser._id,
@@ -255,9 +270,10 @@ exports.getMedicalPrescriptions = async (req, res) => {
       const booking = p.bookingId;
       if (!booking || !booking.dynamicResponses) continue;
 
-      const dyn = booking.dynamicResponses instanceof Map
-        ? Object.fromEntries(booking.dynamicResponses)
-        : booking.dynamicResponses;
+      const dyn =
+        booking.dynamicResponses instanceof Map
+          ? Object.fromEntries(booking.dynamicResponses)
+          : booking.dynamicResponses;
 
       // Load FormConfig to map fieldKey -> label
       let fieldLabelMap = {};
@@ -282,10 +298,26 @@ exports.getMedicalPrescriptions = async (req, res) => {
         return "";
       };
 
-      if (!p.patientName || p.patientName === "Patient" || p.patientName.trim() === "") {
-        const firstName = findByLabel(["first name", "first_name", "firstname", "fname"]);
-        const lastName = findByLabel(["last name", "last_name", "lastname", "lname"]);
-        const fullName = `${firstName} ${lastName}`.trim() || findByLabel(["name", "patient name", "full name"]);
+      if (
+        !p.patientName ||
+        p.patientName === "Patient" ||
+        p.patientName.trim() === ""
+      ) {
+        const firstName = findByLabel([
+          "first name",
+          "first_name",
+          "firstname",
+          "fname",
+        ]);
+        const lastName = findByLabel([
+          "last name",
+          "last_name",
+          "lastname",
+          "lname",
+        ]);
+        const fullName =
+          `${firstName} ${lastName}`.trim() ||
+          findByLabel(["name", "patient name", "full name"]);
         if (fullName) p.patientName = fullName;
       }
 

@@ -1,12 +1,12 @@
 const timeToMinutes = (timeStr) => {
-  const [h, m] = timeStr.split(':').map(Number);
+  const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 };
 
 const minutesToTime = (mins) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
 
 /**
@@ -22,12 +22,12 @@ function generateSlots(startTime, endTime, durationMinutes, breakTimes = []) {
   const slots = [];
   const startMins = timeToMinutes(startTime);
   const endMins = timeToMinutes(endTime);
-  
+
   let current = startMins;
-  
-  const parsedBreaks = breakTimes.map(b => ({
+
+  const parsedBreaks = breakTimes.map((b) => ({
     start: timeToMinutes(b.startTime),
-    end: timeToMinutes(b.endTime)
+    end: timeToMinutes(b.endTime),
   }));
 
   while (current + durationMinutes <= endMins) {
@@ -35,7 +35,7 @@ function generateSlots(startTime, endTime, durationMinutes, breakTimes = []) {
     const slotEnd = current + durationMinutes;
 
     // Check if slot overlaps with any break
-    const overlapsBreak = parsedBreaks.some(b => {
+    const overlapsBreak = parsedBreaks.some((b) => {
       return slotStart < b.end && slotEnd > b.start;
     });
 
@@ -43,17 +43,17 @@ function generateSlots(startTime, endTime, durationMinutes, breakTimes = []) {
       startTime: minutesToTime(slotStart),
       endTime: minutesToTime(slotEnd),
       status: overlapsBreak ? "break" : "available",
-      bookingsCount: 0
+      bookingsCount: 0,
     });
 
     current += durationMinutes;
   }
-  
+
   return slots;
 }
 
 module.exports = {
   timeToMinutes,
   minutesToTime,
-  generateSlots
+  generateSlots,
 };

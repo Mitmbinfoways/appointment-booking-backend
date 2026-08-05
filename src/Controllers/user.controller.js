@@ -166,7 +166,8 @@ const updatePassword = async (req, res, next) => {
 // Create Admin Profile
 const createAdmin = async (req, res, next) => {
   try {
-    const { username, email, password, businessName, timezone, phoneNumber } = req.body;
+    const { username, email, password, businessName, timezone, phoneNumber } =
+      req.body;
 
     if (!username || !email || !password || !businessName) {
       return next(new ApiError(400, "All fields are required."));
@@ -197,13 +198,55 @@ const createAdmin = async (req, res, next) => {
 
     // Automatically initialize SlotSettings and FormConfig with defaults for this Admin
     const defaultWorkingDays = [
-      { day: "Monday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Tuesday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Wednesday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Thursday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Friday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Saturday", isOpen: true, startTime: "09:00", endTime: "17:00", breakTimes: [] },
-      { day: "Sunday", isOpen: false, startTime: "09:00", endTime: "17:00", breakTimes: [] },
+      {
+        day: "Monday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Tuesday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Wednesday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Thursday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Friday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Saturday",
+        isOpen: true,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
+      {
+        day: "Sunday",
+        isOpen: false,
+        startTime: "09:00",
+        endTime: "17:00",
+        breakTimes: [],
+      },
     ];
 
     const slotSettings = new SlotSettings({
@@ -280,7 +323,8 @@ const getAdmins = async (req, res, next) => {
     let modified = false;
     for (const admin of admins) {
       if (!admin.secretKey) {
-        admin.secretKey = "sec_" + require("crypto").randomBytes(16).toString("hex");
+        admin.secretKey =
+          "sec_" + require("crypto").randomBytes(16).toString("hex");
         await admin.save();
         modified = true;
       }
@@ -292,7 +336,9 @@ const getAdmins = async (req, res, next) => {
 
     res
       .status(200)
-      .json(new ApiResponse(200, finalAdmins, "Admins retrieved successfully."));
+      .json(
+        new ApiResponse(200, finalAdmins, "Admins retrieved successfully."),
+      );
   } catch (error) {
     next(error);
   }
@@ -456,20 +502,17 @@ const updateFormConfig = async (req, res, next) => {
 
     // Generate unique key if empty, null, undefined or placeholder
     for (const field of fields) {
-      if (!field.fieldKey || field.fieldKey.trim() === "" || field.fieldKey.startsWith("custom_field_")) {
+      if (
+        !field.fieldKey ||
+        field.fieldKey.trim() === "" ||
+        field.fieldKey.startsWith("custom_field_")
+      ) {
         field.fieldKey = generateUniqueKey();
       }
 
-      if (
-        !field.label ||
-        !field.type ||
-        typeof field.order !== "number"
-      ) {
+      if (!field.label || !field.type || typeof field.order !== "number") {
         return next(
-          new ApiError(
-            400,
-            "Each field must have label, type, and order.",
-          ),
+          new ApiError(400, "Each field must have label, type, and order."),
         );
       }
     }
@@ -516,8 +559,13 @@ const getSlotSettings = async (req, res, next) => {
 // Update Slot Settings
 const updateSlotSettings = async (req, res, next) => {
   try {
-    const { slotDurationMinutes, capacityPerSlot, minAdvanceNoticeMinutes, workingDays, breakTimes } =
-      req.body;
+    const {
+      slotDurationMinutes,
+      capacityPerSlot,
+      minAdvanceNoticeMinutes,
+      workingDays,
+      breakTimes,
+    } = req.body;
 
     let settings = await SlotSettings.findOne({ adminId: req.user._id });
     if (!settings) {
@@ -526,7 +574,9 @@ const updateSlotSettings = async (req, res, next) => {
 
     if (typeof slotDurationMinutes === "number") {
       if (slotDurationMinutes < 5) {
-        return next(new ApiError(400, "Slot duration must be at least 5 minutes."));
+        return next(
+          new ApiError(400, "Slot duration must be at least 5 minutes."),
+        );
       }
       settings.slotDurationMinutes = slotDurationMinutes;
     }
@@ -538,13 +588,15 @@ const updateSlotSettings = async (req, res, next) => {
     }
     if (typeof minAdvanceNoticeMinutes === "number") {
       if (minAdvanceNoticeMinutes < 0) {
-        return next(new ApiError(400, "Minimum advance notice cannot be negative."));
+        return next(
+          new ApiError(400, "Minimum advance notice cannot be negative."),
+        );
       }
       settings.minAdvanceNoticeMinutes = minAdvanceNoticeMinutes;
     }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;
-      settings.markModified('workingDays');
+      settings.markModified("workingDays");
     }
     if (Array.isArray(breakTimes)) settings.breakTimes = breakTimes;
 
@@ -562,7 +614,15 @@ const updateSlotSettings = async (req, res, next) => {
 // Get Bookings
 const getBookings = async (req, res, next) => {
   try {
-    const { status, date, search, startDate, endDate, page = 1, limit = 1000 } = req.query;
+    const {
+      status,
+      date,
+      search,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 1000,
+    } = req.query;
     const adminId = req.user._id;
 
     const idList = [adminId];
@@ -592,9 +652,7 @@ const getBookings = async (req, res, next) => {
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), "i");
       const formConfig = await FormConfig.findOne({ adminId: req.user._id });
-      const searchConditions = [
-        { bookingId: searchRegex },
-      ];
+      const searchConditions = [{ bookingId: searchRegex }];
       if (formConfig && formConfig.fields) {
         formConfig.fields.forEach((field) => {
           if (field.type !== "image" && field.type !== "video") {
@@ -640,7 +698,15 @@ const getBookings = async (req, res, next) => {
 const getAdminBookingsSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { status, date, search, startDate, endDate, page = 1, limit = 1000 } = req.query;
+    const {
+      status,
+      date,
+      search,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 1000,
+    } = req.query;
 
     const idList = [adminId];
     if (mongoose.Types.ObjectId.isValid(adminId)) {
@@ -667,9 +733,7 @@ const getAdminBookingsSuper = async (req, res, next) => {
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), "i");
       const formConfig = await FormConfig.findOne({ adminId });
-      const searchConditions = [
-        { bookingId: searchRegex },
-      ];
+      const searchConditions = [{ bookingId: searchRegex }];
       if (formConfig && formConfig.fields) {
         formConfig.fields.forEach((field) => {
           if (field.type !== "image" && field.type !== "video") {
@@ -703,8 +767,8 @@ const getAdminBookingsSuper = async (req, res, next) => {
             totalPages: Math.ceil(total / limit),
           },
         },
-        "Admin bookings retrieved successfully."
-      )
+        "Admin bookings retrieved successfully.",
+      ),
     );
   } catch (error) {
     next(error);
@@ -766,7 +830,8 @@ const deleteBooking = async (req, res, next) => {
 const updateBookingSuper = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { slotDate, slotStartTime, slotEndTime, status, dynamicResponses } = req.body;
+    const { slotDate, slotStartTime, slotEndTime, status, dynamicResponses } =
+      req.body;
 
     const booking = await Booking.findById(id);
     if (!booking) {
@@ -784,7 +849,9 @@ const updateBookingSuper = async (req, res, next) => {
     }
 
     await booking.save();
-    res.status(200).json(new ApiResponse(200, booking, "Booking updated successfully."));
+    res
+      .status(200)
+      .json(new ApiResponse(200, booking, "Booking updated successfully."));
   } catch (error) {
     next(error);
   }
@@ -798,7 +865,9 @@ const deleteBookingSuper = async (req, res, next) => {
     if (!booking) {
       return next(new ApiError(404, "Booking not found."));
     }
-    res.status(200).json(new ApiResponse(200, null, "Booking deleted successfully."));
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Booking deleted successfully."));
   } catch (error) {
     next(error);
   }
@@ -848,20 +917,17 @@ const updateAdminFormConfigSuper = async (req, res, next) => {
     }
 
     for (const field of fields) {
-      if (!field.fieldKey || field.fieldKey.trim() === "" || field.fieldKey.startsWith("custom_field_")) {
+      if (
+        !field.fieldKey ||
+        field.fieldKey.trim() === "" ||
+        field.fieldKey.startsWith("custom_field_")
+      ) {
         field.fieldKey = generateUniqueKey();
       }
 
-      if (
-        !field.label ||
-        !field.type ||
-        typeof field.order !== "number"
-      ) {
+      if (!field.label || !field.type || typeof field.order !== "number") {
         return next(
-          new ApiError(
-            400,
-            "Each field must have label, type, and order.",
-          ),
+          new ApiError(400, "Each field must have label, type, and order."),
         );
       }
     }
@@ -927,8 +993,13 @@ const getAdminSlotSettingsSuper = async (req, res, next) => {
 const updateAdminSlotSettingsSuper = async (req, res, next) => {
   try {
     const { adminId } = req.params;
-    const { slotDurationMinutes, capacityPerSlot, minAdvanceNoticeMinutes, workingDays, breakTimes } =
-      req.body;
+    const {
+      slotDurationMinutes,
+      capacityPerSlot,
+      minAdvanceNoticeMinutes,
+      workingDays,
+      breakTimes,
+    } = req.body;
 
     const admin = await User.findOne({
       _id: adminId,
@@ -946,7 +1017,9 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
 
     if (typeof slotDurationMinutes === "number") {
       if (slotDurationMinutes < 5) {
-        return next(new ApiError(400, "Slot duration must be at least 5 minutes."));
+        return next(
+          new ApiError(400, "Slot duration must be at least 5 minutes."),
+        );
       }
       settings.slotDurationMinutes = slotDurationMinutes;
     }
@@ -958,13 +1031,15 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
     }
     if (typeof minAdvanceNoticeMinutes === "number") {
       if (minAdvanceNoticeMinutes < 0) {
-        return next(new ApiError(400, "Minimum advance notice cannot be negative."));
+        return next(
+          new ApiError(400, "Minimum advance notice cannot be negative."),
+        );
       }
       settings.minAdvanceNoticeMinutes = minAdvanceNoticeMinutes;
     }
     if (Array.isArray(workingDays)) {
       settings.workingDays = workingDays;
-      settings.markModified('workingDays');
+      settings.markModified("workingDays");
     }
     if (Array.isArray(breakTimes)) settings.breakTimes = breakTimes;
 
@@ -986,24 +1061,35 @@ const updateAdminSlotSettingsSuper = async (req, res, next) => {
 // Get Dashboard Stats (Payload type parameter: 'Admin' or 'SuperAdmin')
 const getDashboardStatsAPI = async (req, res, next) => {
   try {
-    const type = req.body?.type || req.query?.type || req.user?.role || 'Admin';
+    const type = req.body?.type || req.query?.type || req.user?.role || "Admin";
 
-    if (type === 'SuperAdmin') {
-      const totalAdmins = await User.countDocuments({ role: 'Admin', isDeleted: false });
-      const activeAdmins = await User.countDocuments({ role: 'Admin', isActive: true, isDeleted: false });
-      const inactiveAdmins = await User.countDocuments({ role: 'Admin', isActive: false, isDeleted: false });
+    if (type === "SuperAdmin") {
+      const totalAdmins = await User.countDocuments({
+        role: "Admin",
+        isDeleted: false,
+      });
+      const activeAdmins = await User.countDocuments({
+        role: "Admin",
+        isActive: true,
+        isDeleted: false,
+      });
+      const inactiveAdmins = await User.countDocuments({
+        role: "Admin",
+        isActive: false,
+        isDeleted: false,
+      });
 
       res.status(200).json(
         new ApiResponse(
           200,
           {
-            type: 'SuperAdmin',
+            type: "SuperAdmin",
             totalAdmins,
             activeAdmins,
             inactiveAdmins,
           },
-          "SuperAdmin dashboard stats retrieved successfully."
-        )
+          "SuperAdmin dashboard stats retrieved successfully.",
+        ),
       );
     } else {
       // Regular Admin Dashboard Stats
@@ -1031,28 +1117,31 @@ const getDashboardStatsAPI = async (req, res, next) => {
       const todayStr = formatYMD(now);
 
       const totalBookings = await Booking.countDocuments({ adminId });
-      const todayBookings = await Booking.countDocuments({ adminId, slotDate: todayStr });
+      const todayBookings = await Booking.countDocuments({
+        adminId,
+        slotDate: todayStr,
+      });
       const weekBookings = await Booking.countDocuments({
         adminId,
-        slotDate: { $gte: startOfWeekStr, $lte: endOfWeekStr }
+        slotDate: { $gte: startOfWeekStr, $lte: endOfWeekStr },
       });
       const pendingBookings = await Booking.countDocuments({
         adminId,
-        status: new RegExp("^pending$", "i")
+        status: new RegExp("^pending$", "i"),
       });
 
       res.status(200).json(
         new ApiResponse(
           200,
           {
-            type: 'Admin',
+            type: "Admin",
             totalBookings,
             weekBookings,
             todayBookings,
             pendingBookings,
           },
-          "Admin dashboard stats retrieved successfully."
-        )
+          "Admin dashboard stats retrieved successfully.",
+        ),
       );
     }
   } catch (error) {

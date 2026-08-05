@@ -71,7 +71,7 @@ const PrescriptionSchema = new mongoose.Schema(
     businessName: {
       type: String,
       default: "",
-    }, 
+    },
     diagnosis: {
       type: String,
       default: "",
@@ -95,7 +95,7 @@ const PrescriptionSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Prescription", PrescriptionSchema);

@@ -7,13 +7,13 @@ const PORT = process.env.PORT || 3000;
 
 const seedSuperAdmin = async () => {
   try {
-    const count = await User.countDocuments({ role: 'SuperAdmin' });
+    const count = await User.countDocuments({ role: "SuperAdmin" });
     if (count === 0) {
       const defaultSuperAdmin = new User({
         username: "superadmin",
         email: "superadmin@booking.com",
         password: "SuperAdmin123!",
-        role: "SuperAdmin"
+        role: "SuperAdmin",
       });
       await defaultSuperAdmin.save();
       console.log("\n--- Default SuperAdmin Account Seeded ---");

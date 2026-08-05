@@ -7,6 +7,7 @@ This document details the system design, database schemas, API architecture, imp
 ## 1. System Architecture & Role-Based Access Control (RBAC)
 
 The system supports two core roles:
+
 1. **SuperAdmin**: Has global administrative access.
    - Can create, read, update, and toggle active status of Admin profiles.
    - Oversees system metrics, global audits, and platform configuration.
@@ -24,226 +25,270 @@ The system supports two core roles:
 The database design uses MongoDB with Mongoose. These schemas should be created inside your `src/Models/` directory.
 
 ### 2.1 Admin Model (`src/Models/Admin.js`)
+
 Stores Admin credential and profile info.
+
 ```javascript
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const AdminSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
+const AdminSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    businessName: {
+      type: String,
+      required: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    timezone: {
+      type: String,
+      default: "UTC", // e.g., "America/New_York", "Asia/Kolkata"
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuperAdmin",
+    },
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  businessName: {
-    type: String,
-    required: true
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  timezone: {
-    type: String,
-    default: "UTC" // e.g., "America/New_York", "Asia/Kolkata"
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SuperAdmin'
-  }
-}, { timestamps: true });
+  { timestamps: true },
+);
 
-module.exports = mongoose.model('Admin', AdminSchema);
+module.exports = mongoose.model("Admin", AdminSchema);
 ```
 
 ### 2.2 Dynamic Form Configuration Model (`src/Models/FormConfig.js`)
+
 Maintains the metadata of the custom dynamic fields designed by each Admin. The `order` field ensures Drag and Drop (DND) arrangements are saved accurately.
+
 ```javascript
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const FieldSchema = new mongoose.Schema({
   fieldKey: {
     type: String,
-    required: true // e.g., "first_name", "phone_number"
+    required: true, // e.g., "first_name", "phone_number"
   },
   label: {
     type: String,
-    required: true // e.g., "First Name", "Phone Number"
+    required: true, // e.g., "First Name", "Phone Number"
   },
   type: {
     type: String,
     required: true,
-    enum: ['text', 'number', 'email', 'tel', 'textarea', 'select', 'checkbox', 'radio']
+    enum: [
+      "text",
+      "number",
+      "email",
+      "tel",
+      "textarea",
+      "select",
+      "checkbox",
+      "radio",
+    ],
   },
   required: {
     type: Boolean,
-    default: false
+    default: false,
   },
-  options: [{
-    type: String // Only populated if field type is 'select', 'checkbox', or 'radio'
-  }],
+  options: [
+    {
+      type: String, // Only populated if field type is 'select', 'checkbox', or 'radio'
+    },
+  ],
   order: {
     type: Number,
-    required: true // Handles drag-and-drop visual hierarchy order
-  }
+    required: true, // Handles drag-and-drop visual hierarchy order
+  },
 });
 
-const FormConfigSchema = new mongoose.Schema({
-  adminId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true,
-    unique: true
+const FormConfigSchema = new mongoose.Schema(
+  {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+      unique: true,
+    },
+    fields: [FieldSchema],
   },
-  fields: [FieldSchema]
-}, { timestamps: true });
+  { timestamps: true },
+);
 
-module.exports = mongoose.model('FormConfig', FormConfigSchema);
+module.exports = mongoose.model("FormConfig", FormConfigSchema);
 ```
 
 ### 2.3 Slot Booking Settings Model (`src/Models/SlotSettings.js`)
+
 Configures the default behavior of appointment slot intervals, max capacity per slot, working days, and default breaks.
+
 ```javascript
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const WorkingDaySchema = new mongoose.Schema({
   day: {
     type: String,
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    required: true
+    enum: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    required: true,
   },
   isOpen: {
     type: Boolean,
-    default: true
+    default: true,
   },
   startTime: {
     type: String, // format "HH:MM" e.g., "09:00"
-    default: "09:00"
+    default: "09:00",
   },
   endTime: {
     type: String, // format "HH:MM" e.g., "17:00"
-    default: "17:00"
-  }
+    default: "17:00",
+  },
 });
 
 const BreakTimeSchema = new mongoose.Schema({
   name: { type: String, default: "Break" },
   startTime: { type: String, required: true }, // format "HH:MM"
-  endTime: { type: String, required: true } // format "HH:MM"
+  endTime: { type: String, required: true }, // format "HH:MM"
 });
 
-const SlotSettingsSchema = new mongoose.Schema({
-  adminId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true,
-    unique: true
+const SlotSettingsSchema = new mongoose.Schema(
+  {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+      unique: true,
+    },
+    slotDurationMinutes: {
+      type: Number,
+      required: true,
+      default: 30, // Any custom value (5, 10, 15, 30, 45, 60, etc.)
+    },
+    capacityPerSlot: {
+      type: Number,
+      required: true,
+      default: 1, // If set to 5, the slot remains "Available" until 5 users book it.
+    },
+    workingDays: [WorkingDaySchema],
+    breakTimes: [BreakTimeSchema],
   },
-  slotDurationMinutes: {
-    type: Number,
-    required: true,
-    default: 30 // Any custom value (5, 10, 15, 30, 45, 60, etc.)
-  },
-  capacityPerSlot: {
-    type: Number,
-    required: true,
-    default: 1 // If set to 5, the slot remains "Available" until 5 users book it.
-  },
-  workingDays: [WorkingDaySchema],
-  breakTimes: [BreakTimeSchema]
-}, { timestamps: true });
+  { timestamps: true },
+);
 
-module.exports = mongoose.model('SlotSettings', SlotSettingsSchema);
+module.exports = mongoose.model("SlotSettings", SlotSettingsSchema);
 ```
 
 ### 2.4 Holiday & Off-Days Model (`src/Models/Holiday.js`)
-Stores custom holidays and day-off overrides (including full-days off and custom/half-days off).
-```javascript
-const mongoose = require('mongoose');
 
-const HolidaySchema = new mongoose.Schema({
-  adminId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true
+Stores custom holidays and day-off overrides (including full-days off and custom/half-days off).
+
+```javascript
+const mongoose = require("mongoose");
+
+const HolidaySchema = new mongoose.Schema(
+  {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+    },
+    date: {
+      type: String, // Format: "YYYY-MM-DD"
+      required: true,
+    },
+    isFullDay: {
+      type: Boolean,
+      default: true,
+    },
+    // If isFullDay is false, admin configures custom hours they are available/unavailable
+    customStartTime: {
+      type: String, // Format: "HH:MM", e.g., "13:00" (available after 1 PM)
+    },
+    customEndTime: {
+      type: String, // Format: "HH:MM", e.g., "17:00"
+    },
+    reason: {
+      type: String,
+    },
   },
-  date: {
-    type: String, // Format: "YYYY-MM-DD"
-    required: true
-  },
-  isFullDay: {
-    type: Boolean,
-    default: true
-  },
-  // If isFullDay is false, admin configures custom hours they are available/unavailable
-  customStartTime: {
-    type: String // Format: "HH:MM", e.g., "13:00" (available after 1 PM)
-  },
-  customEndTime: {
-    type: String // Format: "HH:MM", e.g., "17:00"
-  },
-  reason: {
-    type: String
-  }
-}, { timestamps: true });
+  { timestamps: true },
+);
 
 // Ensure unique date per Admin
 HolidaySchema.index({ adminId: 1, date: 1 }, { unique: true });
 
-module.exports = mongoose.model('Holiday', HolidaySchema);
+module.exports = mongoose.model("Holiday", HolidaySchema);
 ```
 
 ### 2.5 Booking Model (`src/Models/Booking.js`)
-Records final booked appointments. It dynamic-maps fields populated from the dynamic form config using a Mongoose Map.
-```javascript
-const mongoose = require('mongoose');
 
-const BookingSchema = new mongoose.Schema({
-  adminId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true
+Records final booked appointments. It dynamic-maps fields populated from the dynamic form config using a Mongoose Map.
+
+```javascript
+const mongoose = require("mongoose");
+
+const BookingSchema = new mongoose.Schema(
+  {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true,
+    },
+    slotDate: {
+      type: String, // Format: "YYYY-MM-DD"
+      required: true,
+    },
+    slotStartTime: {
+      type: String, // Format: "HH:MM"
+      required: true,
+    },
+    slotEndTime: {
+      type: String, // Format: "HH:MM"
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "cancelled"],
+      default: "confirmed",
+    },
+    // Key-value pair containing custom responses matching FormConfig schema fields
+    dynamicResponses: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      required: true,
+    },
   },
-  slotDate: {
-    type: String, // Format: "YYYY-MM-DD"
-    required: true
-  },
-  slotStartTime: {
-    type: String, // Format: "HH:MM"
-    required: true
-  },
-  slotEndTime: {
-    type: String, // Format: "HH:MM"
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'cancelled'],
-    default: 'confirmed'
-  },
-  // Key-value pair containing custom responses matching FormConfig schema fields
-  dynamicResponses: {
-    type: Map,
-    of: mongoose.Schema.Types.Mixed,
-    required: true
-  }
-}, { timestamps: true });
+  { timestamps: true },
+);
 
 // Indexing for faster slot lookup & uniqueness check
 BookingSchema.index({ adminId: 1, slotDate: 1, slotStartTime: 1 });
 
-module.exports = mongoose.model('Booking', BookingSchema);
+module.exports = mongoose.model("Booking", BookingSchema);
 ```
 
 ---
@@ -251,6 +296,7 @@ module.exports = mongoose.model('Booking', BookingSchema);
 ## 3. Dynamic Form Logic & DND Integration
 
 ### How Drag-and-Drop (DND) Works
+
 1. **Frontend Layer**:
    - The admin UI implements a Drag-and-Drop interface (using React components like `dnd-kit` or `react-beautiful-dnd`).
    - Every field block has a unique identifier and an integer `order` index.
@@ -295,23 +341,25 @@ graph TD
 ```
 
 ### Calculation Code Implementation
+
 Example utility helper to place inside `src/Utils/slotGenerator.js`:
+
 ```javascript
-const moment = require('moment'); // Optional helper library
+const moment = require("moment"); // Optional helper library
 
 function generateSlots(startTimeStr, endTimeStr, durationMinutes) {
   const slots = [];
   let current = moment(startTimeStr, "HH:mm");
   const end = moment(endTimeStr, "HH:mm");
 
-  while (current.clone().add(durationMinutes, 'minutes').isSameOrBefore(end)) {
+  while (current.clone().add(durationMinutes, "minutes").isSameOrBefore(end)) {
     const slotStart = current.format("HH:mm");
-    const slotEnd = current.add(durationMinutes, 'minutes').format("HH:mm");
+    const slotEnd = current.add(durationMinutes, "minutes").format("HH:mm");
     slots.push({
       startTime: slotStart,
       endTime: slotEnd,
       status: "available",
-      bookingsCount: 0
+      bookingsCount: 0,
     });
   }
   return slots;
@@ -327,12 +375,14 @@ module.exports = { generateSlots };
 Create standard express controllers in `src/Controllers/` to handle dynamic configurations.
 
 ### 5.1 SuperAdmin Endpoints
+
 - `POST /api/superadmin/admins` - Create a new Admin account.
 - `GET /api/superadmin/admins` - Fetch all Admins.
 - `PUT /api/superadmin/admins/:id` - Edit Admin profile (basic information).
 - `PUT /api/superadmin/admins/:id/toggle` - Activate/Deactivate Admin.
 
 ### 5.2 Admin Endpoints
+
 - `POST /api/admin/auth/login` - Admin login.
 - `GET /api/admin/profile` - Fetch Admin profile info.
 - `PUT /api/admin/form-config` - Set, edit, and drag-order dynamic form configuration fields.
@@ -342,11 +392,13 @@ Create standard express controllers in `src/Controllers/` to handle dynamic conf
 - `DELETE /api/admin/bookings/:id` - Delete/Cancel booking.
 
 ### 5.3 Holiday/Day-Off Management Endpoints
+
 - `POST /api/admin/holidays` - Register a full holiday or a half-day custom time slot.
 - `GET /api/admin/holidays` - Fetch all registered holidays.
 - `DELETE /api/admin/holidays/:id` - Remove a registered holiday/day-off.
 
 ### 5.4 Public Booking Endpoints (Customer Facing)
+
 - `GET /api/public/form-config/:adminId` - Fetch the custom dynamic fields for UI rendering.
 - `GET /api/public/available-slots/:adminId?date=YYYY-MM-DD` - Get live status of slots on a given date (showing "available", "booked", capacity).
 - `POST /api/public/bookings/:adminId` - Submit a new appointment booking. Requires payload validation against dynamic fields metadata and checks for slot capacity.
@@ -358,13 +410,16 @@ Create standard express controllers in `src/Controllers/` to handle dynamic conf
 To make this application enterprise-ready, robust, and highly scalable, implement these recommended enhancements:
 
 ### 6.1 Strict Concurrency Locking (Double-Booking Prevention)
+
 **Problem**: If 2 users try to book the last slot at the same millisecond, standard database checks can lead to a double booking (race condition).
 **Solutions**:
+
 - **MongoDB Transactions (ACID)**: Wrap checking slot booking count + creating the booking document in a MongoDB Session Transaction.
 - **Atomic Operations / Pre-booking Check**: Before inserting, run `findOneAndUpdate` with query filter checking that the bookings count is strictly less than the capacity limit.
 - **Distributed Lock**: Use Redis (with a library like `Redlock`) to create a distributed lock key based on `${adminId}:${slotDate}:${slotStartTime}` for the duration of the writing operation.
 
 ### 6.2 UTC Normalization & Timezone Mapping
+
 - **Problem**: Admin might be in `America/New_York` (EST) and a user in `Asia/Kolkata` (IST). Storing raw strings or local times causes offset mismatches.
 - **Best Practice**:
   - Save all date-time calculations using UTC (ISO Strings or Unix timestamps).
@@ -372,9 +427,11 @@ To make this application enterprise-ready, robust, and highly scalable, implemen
   - Convert slots dynamically relative to the target timezone on the frontend UI using `luxon` or `moment-timezone`.
 
 ### 6.3 Buffer Times Between Slots
+
 - **Feature Suggestion**: Add a `bufferTimeMinutes` setting (e.g., 5-minute break between bookings).
 - **Implementation**: During slot generation, calculate `totalInterval = slotDurationMinutes + bufferTimeMinutes` to space consecutive bookings.
 
 ### 6.4 Dynamic Form Validation via Joi/Zod
+
 - **Enhancement**: Build validator middlewares that map the `FormConfig` field schema definition to a custom **Joi** or **Zod** validator object dynamically.
 - **Benefit**: Ensures clean validation before hitting controllers, making payload parsing bulletproof.

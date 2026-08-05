@@ -6,7 +6,12 @@
  * Converts a time string "HH:MM" on a specific date "YYYY-MM-DD" from source timezone to target timezone.
  * Returns { time: "HH:MM", date: "YYYY-MM-DD" } in the target timezone.
  */
-function convertTimeBetweenTimezones(timeStr, dateStr, fromTimezone = "UTC", toTimezone = "UTC") {
+function convertTimeBetweenTimezones(
+  timeStr,
+  dateStr,
+  fromTimezone = "UTC",
+  toTimezone = "UTC",
+) {
   if (!timeStr || !dateStr) return { time: timeStr, date: dateStr };
   if (fromTimezone === toTimezone) return { time: timeStr, date: dateStr };
 
@@ -15,7 +20,9 @@ function convertTimeBetweenTimezones(timeStr, dateStr, fromTimezone = "UTC", toT
     const [hours, minutes] = timeStr.split(":").map(Number);
 
     // Create a Date object assuming UTC initially
-    const tempDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
+    const tempDate = new Date(
+      Date.UTC(year, month - 1, day, hours, minutes, 0),
+    );
 
     // Get wall clock representation in fromTimezone to determine offset difference
     const fromFormatter = new Intl.DateTimeFormat("en-US", {
@@ -30,7 +37,7 @@ function convertTimeBetweenTimezones(timeStr, dateStr, fromTimezone = "UTC", toT
     });
 
     const fromParts = Object.fromEntries(
-      fromFormatter.formatToParts(tempDate).map((p) => [p.type, p.value])
+      fromFormatter.formatToParts(tempDate).map((p) => [p.type, p.value]),
     );
 
     const fromYear = parseInt(fromParts.year, 10);
@@ -40,7 +47,14 @@ function convertTimeBetweenTimezones(timeStr, dateStr, fromTimezone = "UTC", toT
     if (fromHour === 24) fromHour = 0;
     const fromMinute = parseInt(fromParts.minute, 10);
 
-    const fromAsUtc = Date.UTC(fromYear, fromMonth, fromDay, fromHour, fromMinute, 0);
+    const fromAsUtc = Date.UTC(
+      fromYear,
+      fromMonth,
+      fromDay,
+      fromHour,
+      fromMinute,
+      0,
+    );
     const offsetMs = fromAsUtc - tempDate.getTime();
 
     // Actual UTC timestamp of (dateStr + timeStr) in fromTimezone
@@ -59,7 +73,7 @@ function convertTimeBetweenTimezones(timeStr, dateStr, fromTimezone = "UTC", toT
     });
 
     const toParts = Object.fromEntries(
-      toFormatter.formatToParts(targetDate).map((p) => [p.type, p.value])
+      toFormatter.formatToParts(targetDate).map((p) => [p.type, p.value]),
     );
 
     const resYear = toParts.year;
