@@ -20,6 +20,10 @@ const UserModuleSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    doctorModule: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

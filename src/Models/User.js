@@ -60,6 +60,11 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    joinId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
   },
   { timestamps: true },
 );

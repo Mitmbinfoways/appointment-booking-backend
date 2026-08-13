@@ -2,6 +2,7 @@ const User = require("../Models/User");
 const SlotSettings = require("../Models/SlotSettings");
 const FormConfig = require("../Models/FormConfig");
 const Booking = require("../Models/Booking");
+const UserModule = require("../Models/UserModule");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const ApiError = require("../Utils/ApiError");
@@ -166,7 +167,7 @@ const updatePassword = async (req, res, next) => {
 // Create Admin Profile
 const createAdmin = async (req, res, next) => {
   try {
-    const { username, email, password, businessName, timezone, phoneNumber } =
+    const { username, email, password, businessName, timezone, phoneNumber, modules } =
       req.body;
 
     if (!username || !email || !password || !businessName) {
@@ -192,6 +193,7 @@ const createAdmin = async (req, res, next) => {
       phoneNumber,
       secretKey: "sec_" + require("crypto").randomBytes(16).toString("hex"),
       createdBy: req.user._id,
+      joinId: "JN-" + require("crypto").randomBytes(3).toString("hex").toUpperCase(),
     });
 
     await admin.save();
@@ -293,6 +295,18 @@ const createAdmin = async (req, res, next) => {
     });
     await formConfig.save();
 
+    // Create UserModule with selected modules if provided
+    if (Array.isArray(modules) && modules.length > 0) {
+      const userModule = new UserModule({
+        adminId: admin._id,
+        doctorModule: modules.includes("doctor"),
+        medicineModule: modules.includes("medicine"),
+        medicalModule: modules.includes("medical"),
+        userManagementModule: modules.includes("userManagement"),
+      });
+      await userModule.save();
+    }
+
     const adminObj = admin.toObject();
     delete adminObj.password;
 
@@ -325,8 +339,15 @@ const getAdmins = async (req, res, next) => {
       if (!admin.secretKey) {
         admin.secretKey =
           "sec_" + require("crypto").randomBytes(16).toString("hex");
-        await admin.save();
         modified = true;
+      }
+      if (!admin.joinId) {
+        admin.joinId =
+          "JN-" + require("crypto").randomBytes(3).toString("hex").toUpperCase();
+        modified = true;
+      }
+      if (modified) {
+        await admin.save();
       }
     }
 
