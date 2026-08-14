@@ -77,7 +77,7 @@ exports.getUserModules = async (req, res) => {
     if (!userModule) {
       userModule = {
         adminId,
-        doctorModule: false,
+        doctorModule: true,
         medicalModule: false,
         medicineModule: false,
         userManagementModule: false,
