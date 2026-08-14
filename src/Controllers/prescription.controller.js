@@ -134,8 +134,12 @@ exports.savePrescription = async (req, res) => {
         })
       : [];
 
-    // If medicineModule is enabled, process inventory stock deductions for catalog items
-    if (hasMedicineAccess) {
+    // If medicineModule is enabled, process inventory stock deductions ONLY if NOT sent to a Medical User / Pharmacy
+    const isSentToMedical = Boolean(
+      sentToMedicalUser && mongoose.Types.ObjectId.isValid(sentToMedicalUser),
+    );
+
+    if (hasMedicineAccess && !isSentToMedical) {
       for (const item of ProcessedMedicines) {
         if (!item.isCustom && item.medicineId) {
           const medRecord = await Medicine.findById(item.medicineId);
@@ -149,7 +153,7 @@ exports.savePrescription = async (req, res) => {
           }
         }
       }
-    } else {
+    } else if (!hasMedicineAccess) {
       // If medicineModule is disabled, force all prescribed items to be custom
       ProcessedMedicines.forEach((m) => {
         m.isCustom = true;

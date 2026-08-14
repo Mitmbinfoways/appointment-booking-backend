@@ -9,8 +9,10 @@ const ApiResponse = require("../Utils/ApiResponse");
 const getAdminModuleName = async (adminId) => {
   const userModule = await UserModule.findOne({ adminId });
   if (!userModule) return "general";
-  if (userModule.doctorModule) return "doctor";
+  if (userModule.medicalModule && !userModule.doctorModule) return "medical";
+  if (userModule.doctorModule && !userModule.medicalModule) return "doctor";
   if (userModule.medicalModule) return "medical";
+  if (userModule.doctorModule) return "doctor";
   if (userModule.medicineModule) return "medicine";
   if (userModule.userManagementModule) return "userManagement";
   return "general";
@@ -131,47 +133,58 @@ const getLinkedAdmins = async (req, res, next) => {
       .populate("toAdminId", "username email businessName joinId phoneNumber isActive")
       .sort({ linkedAt: -1 });
 
-    // Build clean list
-    const result = links.map((link) => {
-      if (isSuperAdmin) {
+    // Build clean list with live module evaluation
+    const result = await Promise.all(
+      links.map(async (link) => {
+        const liveFromModule = link.fromAdminId?._id
+          ? await getAdminModuleName(link.fromAdminId._id)
+          : link.fromModule;
+        const liveToModule = link.toAdminId?._id
+          ? await getAdminModuleName(link.toAdminId._id)
+          : link.toModule;
+
+        if (isSuperAdmin) {
+          return {
+            _id: link._id,
+            fromAdmin: link.fromAdminId,
+            toAdmin: link.toAdminId,
+            fromModule: liveFromModule,
+            toModule: liveToModule,
+            linkedAdmin: link.toAdminId,
+            linkedModule: liveToModule,
+            myModule: liveFromModule,
+            status: link.status,
+            linkedAt: link.linkedAt,
+          };
+        }
+
+        const isFrom = idList.some(
+          (id) =>
+            link.fromAdminId?._id &&
+            id.toString() === link.fromAdminId._id.toString(),
+        );
+        const linkedAdmin = isFrom ? link.toAdminId : link.fromAdminId;
+        const linkedModule = isFrom ? liveToModule : liveFromModule;
+        const myModule = isFrom ? liveFromModule : liveToModule;
+
         return {
           _id: link._id,
-          fromAdmin: link.fromAdminId,
-          toAdmin: link.toAdminId,
-          fromModule: link.fromModule,
-          toModule: link.toModule,
-          linkedAdmin: link.toAdminId,
-          linkedModule: link.toModule,
-          myModule: link.fromModule,
+          linkedAdmin: {
+            _id: linkedAdmin._id,
+            username: linkedAdmin.username,
+            email: linkedAdmin.email,
+            businessName: linkedAdmin.businessName,
+            joinId: linkedAdmin.joinId,
+            phoneNumber: linkedAdmin.phoneNumber,
+            isActive: linkedAdmin.isActive,
+          },
+          linkedModule,
+          myModule,
           status: link.status,
           linkedAt: link.linkedAt,
         };
-      }
-
-      const isFrom = idList.some(
-        (id) => id.toString() === link.fromAdminId._id.toString(),
-      );
-      const linkedAdmin = isFrom ? link.toAdminId : link.fromAdminId;
-      const linkedModule = isFrom ? link.toModule : link.fromModule;
-      const myModule = isFrom ? link.fromModule : link.toModule;
-
-      return {
-        _id: link._id,
-        linkedAdmin: {
-          _id: linkedAdmin._id,
-          username: linkedAdmin.username,
-          email: linkedAdmin.email,
-          businessName: linkedAdmin.businessName,
-          joinId: linkedAdmin.joinId,
-          phoneNumber: linkedAdmin.phoneNumber,
-          isActive: linkedAdmin.isActive,
-        },
-        linkedModule,
-        myModule,
-        status: link.status,
-        linkedAt: link.linkedAt,
-      };
-    });
+      }),
+    );
 
     // Filter by module if requested
     const filtered = moduleFilter
