@@ -298,11 +298,14 @@ const createAdmin = async (req, res, next) => {
 
     // Create UserModule with selected modules if provided
     if (Array.isArray(modules) && modules.length > 0) {
+      const isDoctor = modules.includes("doctor");
+      const isMedical = modules.includes("medical");
+
       const userModule = new UserModule({
         adminId: admin._id,
-        doctorModule: modules.includes("doctor"),
+        doctorModule: isDoctor,
+        medicalModule: isDoctor ? false : isMedical,
         medicineModule: modules.includes("medicine"),
-        medicalModule: modules.includes("medical"),
         userManagementModule: modules.includes("userManagement"),
       });
       await userModule.save();

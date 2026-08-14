@@ -26,12 +26,29 @@ exports.toggleUserModule = async (req, res) => {
       userModule = new UserModule({ adminId });
     }
 
-    userModule[moduleName] = Boolean(enabled);
+    let key = moduleName;
+    if (key === "doctor") key = "doctorModule";
+    if (key === "medical") key = "medicalModule";
+    if (key === "medicine") key = "medicineModule";
+    if (key === "userManagement") key = "userManagementModule";
+
+    const isEnable = Boolean(enabled);
+    userModule[key] = isEnable;
+
+    // Doctor Module and Medical Module are mutually exclusive
+    if (isEnable) {
+      if (key === "doctorModule") {
+        userModule.medicalModule = false;
+      } else if (key === "medicalModule") {
+        userModule.doctorModule = false;
+      }
+    }
+
     await userModule.save();
 
     return res.status(200).json({
       statusCode: 200,
-      message: `Module '${moduleName}' updated successfully.`,
+      message: `Module '${key}' updated successfully.`,
       data: userModule,
     });
   } catch (error) {
@@ -58,7 +75,16 @@ exports.getUserModules = async (req, res) => {
 
     let userModule = await UserModule.findOne({ adminId });
     if (!userModule) {
-      userModule = { adminId, medicineModule: false };
+      userModule = {
+        adminId,
+        doctorModule: false,
+        medicalModule: false,
+        medicineModule: false,
+        userManagementModule: false,
+      };
+    } else if (userModule.doctorModule && userModule.medicalModule) {
+      userModule.medicalModule = false;
+      await userModule.save();
     }
 
     return res.status(200).json({
