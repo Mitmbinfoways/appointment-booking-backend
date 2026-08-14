@@ -243,19 +243,17 @@ const getLinkedMedicalAdmins = async (req, res, next) => {
     const medicalAdmins = [];
 
     for (const link of links) {
-      const isFrom = idList.some(
-        (id) => id.toString() === link.fromAdminId._id.toString(),
-      );
+      if (!link.fromAdminId || !link.toAdminId) continue;
+      const fromIdStr = (link.fromAdminId._id || link.fromAdminId).toString();
+      const isFrom = idList.some((id) => id.toString() === fromIdStr);
       const otherAdmin = isFrom ? link.toAdminId : link.fromAdminId;
-      const otherModule = isFrom ? link.toModule : link.fromModule;
 
-      // Only include admins with medical module
-      if (otherModule === "medical" && otherAdmin.isActive) {
-        // Also verify the UserModule still has medicalModule enabled
-        const userModule = await UserModule.findOne({
-          adminId: otherAdmin._id,
-        });
-        if (userModule && userModule.medicalModule) {
+      if (otherAdmin && otherAdmin.isActive !== false) {
+        if (
+          !medicalAdmins.some(
+            (m) => m._id.toString() === otherAdmin._id.toString(),
+          )
+        ) {
           medicalAdmins.push({
             _id: otherAdmin._id,
             name: `${otherAdmin.username}${otherAdmin.businessName ? ` (${otherAdmin.businessName})` : ""}`,

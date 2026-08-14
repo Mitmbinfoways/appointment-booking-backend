@@ -175,12 +175,32 @@ const createAdmin = async (req, res, next) => {
       return next(new ApiError(400, "All fields are required."));
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = username.trim();
+
+    // Check only active (non-deleted) users for duplicates
     const existingAdmin = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [
+        { email: { $regex: `^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+        { username: { $regex: `^${cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+      ],
+      isDeleted: false,
     });
+
     if (existingAdmin) {
+      if (existingAdmin.email?.toLowerCase() === cleanEmail) {
+        return next(
+          new ApiError(
+            400,
+            "An admin account with this email address already exists.",
+          ),
+        );
+      }
       return next(
-        new ApiError(400, "User with this email or username already exists."),
+        new ApiError(
+          400,
+          "An admin account with this username already exists.",
+        ),
       );
     }
 

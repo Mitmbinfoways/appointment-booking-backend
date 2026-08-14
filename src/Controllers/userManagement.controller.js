@@ -179,33 +179,6 @@ exports.getMedicalSubUsers = async (req, res) => {
       });
     }
 
-    // 2. Fetch SubUsers who have medical access or belong to this adminId
-    const subUserFilter = { isActive: true };
-    if (adminId) {
-      const idList = [adminId];
-      if (mongoose.Types.ObjectId.isValid(adminId)) {
-        idList.push(new mongoose.Types.ObjectId(adminId));
-      }
-      subUserFilter.$or = [
-        { adminId: { $in: idList } },
-        { hasMedicalAccess: true },
-      ];
-    }
-
-    const subUsers = await SubUser.find(subUserFilter).sort({ name: 1 });
-    subUsers.forEach((su) => {
-      if (!list.some((item) => item._id.toString() === su._id.toString())) {
-        list.push({
-          _id: su._id,
-          name: su.name,
-          email: su.email,
-          role: su.role || "Medical Staff",
-          phoneNumber: su.phone || "",
-          hasMedicalAccess: su.hasMedicalAccess,
-        });
-      }
-    });
-
     return res.status(200).json({
       statusCode: 200,
       data: list,
