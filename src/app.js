@@ -41,9 +41,21 @@ app.get("/", (req, res) => {
 
 // Centralized Error Handling Middleware
 app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  let statusCode = err.statusCode || err.status || 500;
+  let message = err.message || "Internal Server Error";
   const errorData = err.errorData || null;
+
+  if (
+    err instanceof RangeError ||
+    (message &&
+      (message.includes("out of range") ||
+        message.includes("too large") ||
+        message.includes("entity too large")))
+  ) {
+    statusCode = 413;
+    message =
+      "Uploaded file size is too large for transmission. Please select a smaller file (max 5MB for images, 10MB for videos).";
+  }
 
   console.error("API Error Response:", {
     statusCode,
