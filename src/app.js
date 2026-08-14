@@ -11,8 +11,8 @@ app.use(
     origin: process.env.CORS_ORIGIN || "*",
   }),
 );
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Import Routes
@@ -54,7 +54,7 @@ app.use((err, req, res, next) => {
   ) {
     statusCode = 413;
     message =
-      "Uploaded file size is too large for transmission. Please select a smaller file (max 5MB for images, 10MB for videos).";
+      "Uploaded file size is too large for transmission. Please select a smaller file (max 5MB for images, 20MB for videos).";
   }
 
   console.error("API Error Response:", {
