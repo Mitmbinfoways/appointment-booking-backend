@@ -102,26 +102,27 @@ exports.updateSubUser = async (req, res) => {
     const { adminId, name, email, phoneNumber, role, hasMedicalAccess } =
       req.body;
 
-    if (!id || !adminId) {
+    if (!id) {
       return res.status(400).json({
         statusCode: 400,
-        message: "SubUser id and adminId are required.",
+        message: "SubUser id is required.",
       });
     }
 
-    const hasAccess = await checkUserManagementAccess(adminId);
-    if (!hasAccess) {
-      return res.status(403).json({
-        statusCode: 403,
-        message: "User Management module is not enabled for this Admin.",
-      });
-    }
-
-    const subUser = await SubUser.findOne({ _id: id, adminId });
+    const subUser = await SubUser.findById(id);
     if (!subUser) {
       return res.status(404).json({
         statusCode: 404,
         message: "User record not found.",
+      });
+    }
+
+    const targetAdminId = adminId || subUser.adminId;
+    const hasAccess = await checkUserManagementAccess(targetAdminId);
+    if (!hasAccess) {
+      return res.status(403).json({
+        statusCode: 403,
+        message: "User Management module is not enabled for this Admin.",
       });
     }
 
@@ -223,28 +224,29 @@ exports.getMedicalSubUsers = async (req, res) => {
 exports.toggleSubUserActive = async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminId } = req.body;
+    const adminId = req.body?.adminId || req.query?.adminId;
 
-    if (!id || !adminId) {
+    if (!id) {
       return res.status(400).json({
         statusCode: 400,
-        message: "SubUser id and adminId are required.",
+        message: "SubUser id is required.",
       });
     }
 
-    const hasAccess = await checkUserManagementAccess(adminId);
-    if (!hasAccess) {
-      return res.status(403).json({
-        statusCode: 403,
-        message: "User Management module is not enabled for this Admin.",
-      });
-    }
-
-    const subUser = await SubUser.findOne({ _id: id, adminId });
+    const subUser = await SubUser.findById(id);
     if (!subUser) {
       return res.status(404).json({
         statusCode: 404,
         message: "User record not found.",
+      });
+    }
+
+    const targetAdminId = adminId || subUser.adminId;
+    const hasAccess = await checkUserManagementAccess(targetAdminId);
+    if (!hasAccess) {
+      return res.status(403).json({
+        statusCode: 403,
+        message: "User Management module is not enabled for this Admin.",
       });
     }
 
@@ -272,14 +274,23 @@ exports.deleteSubUser = async (req, res) => {
     const { id } = req.params;
     const { adminId } = req.query;
 
-    if (!id || !adminId) {
+    if (!id) {
       return res.status(400).json({
         statusCode: 400,
-        message: "SubUser id and adminId are required.",
+        message: "SubUser id is required.",
       });
     }
 
-    const hasAccess = await checkUserManagementAccess(adminId);
+    const subUser = await SubUser.findById(id);
+    if (!subUser) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: "User record not found.",
+      });
+    }
+
+    const targetAdminId = adminId || subUser.adminId;
+    const hasAccess = await checkUserManagementAccess(targetAdminId);
     if (!hasAccess) {
       return res.status(403).json({
         statusCode: 403,
@@ -287,13 +298,7 @@ exports.deleteSubUser = async (req, res) => {
       });
     }
 
-    const result = await SubUser.deleteOne({ _id: id, adminId });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: "User record not found.",
-      });
-    }
+    await SubUser.deleteOne({ _id: id });
 
     return res.status(200).json({
       statusCode: 200,

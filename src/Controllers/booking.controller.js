@@ -5,6 +5,7 @@ const Holiday = require("../Models/Holiday");
 const Booking = require("../Models/Booking");
 const ApiError = require("../Utils/ApiError");
 const ApiResponse = require("../Utils/ApiResponse");
+const { processBase64Responses } = require("../Utils/fileHelper");
 const {
   generateSlots,
   timeToMinutes,
@@ -549,6 +550,8 @@ const createBooking = async (req, res, next) => {
     const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
     const numericBookingId = `${dateDigits}${randomDigits}`;
 
+    const processedResponses = processBase64Responses(dynamicResponses, req);
+
     // Create the booking
     const booking = new Booking({
       adminId,
@@ -557,7 +560,7 @@ const createBooking = async (req, res, next) => {
       slotStartTime,
       slotEndTime,
       status: "confirmed",
-      dynamicResponses,
+      dynamicResponses: processedResponses,
     });
 
     await booking.save();

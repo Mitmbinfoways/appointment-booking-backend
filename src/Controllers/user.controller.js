@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const ApiError = require("../Utils/ApiError");
 const ApiResponse = require("../Utils/ApiResponse");
+const { processBase64Responses } = require("../Utils/fileHelper");
 
 const generateUniqueKey = () => {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -813,7 +814,8 @@ const updateBooking = async (req, res, next) => {
     if (slotEndTime) booking.slotEndTime = slotEndTime;
     if (status) booking.status = status;
     if (dynamicResponses) {
-      for (const [key, value] of Object.entries(dynamicResponses)) {
+      const processed = processBase64Responses(dynamicResponses, req);
+      for (const [key, value] of Object.entries(processed)) {
         booking.dynamicResponses.set(key, value);
       }
     }
@@ -864,7 +866,8 @@ const updateBookingSuper = async (req, res, next) => {
     if (slotEndTime) booking.slotEndTime = slotEndTime;
     if (status) booking.status = status;
     if (dynamicResponses) {
-      for (const [key, value] of Object.entries(dynamicResponses)) {
+      const processed = processBase64Responses(dynamicResponses, req);
+      for (const [key, value] of Object.entries(processed)) {
         booking.dynamicResponses.set(key, value);
       }
     }
