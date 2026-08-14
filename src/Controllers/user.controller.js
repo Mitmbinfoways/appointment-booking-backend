@@ -690,7 +690,7 @@ const getBookings = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const bookings = await Booking.find(filter)
-      .sort({ slotDate: -1, slotStartTime: 1 })
+      .sort({ slotDate: 1, slotStartTime: 1 })
       .skip(Number(skip))
       .limit(Number(limit));
 
@@ -771,7 +771,7 @@ const getAdminBookingsSuper = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const bookings = await Booking.find(filter)
-      .sort({ slotDate: -1, slotStartTime: 1 })
+      .sort({ slotDate: 1, slotStartTime: 1 })
       .skip(Number(skip))
       .limit(Number(limit));
 
